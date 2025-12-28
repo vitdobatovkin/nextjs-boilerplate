@@ -1,4 +1,7 @@
-export const metadata = {
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
   title: "How based are you in 2026?",
   description: "Tap Based me — quick spin, and we’ll rate how based you are."
 };
