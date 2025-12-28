@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export default function HomePage() {
+export default function Page() {
   useEffect(() => {
     const DEFAULT_AVATAR =
       "https://pbs.twimg.com/profile_images/1868572161415532544/n1z9sXm4_400x400.jpg";
@@ -10,9 +10,8 @@ export default function HomePage() {
     // ============================
     // PUT YOUR RAW_PARTICIPANTS HERE
     // ============================
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const RAW_PARTICIPANTS: Array<{ handle: string; image: string; bio: string }> = [
-      // { handle:"@someone", image:"https://...", bio:"..." },
+      // { handle:"@Oxxbid", image:"https://...", bio:"..." },
     ];
 
     const CREATOR = {
@@ -28,7 +27,7 @@ export default function HomePage() {
 
     function sanitize(raw: any[]) {
       const out: any[] = [];
-      const seen = new Set();
+      const seen = new Set<string>();
       for (const p of raw) {
         if (!p || typeof p !== "object") continue;
 
@@ -49,29 +48,39 @@ export default function HomePage() {
 
     const people = sanitize(RAW_PARTICIPANTS);
 
-    const stageEl = document.getElementById("stage") as HTMLDivElement;
-    const imgEl = document.getElementById("img") as HTMLImageElement;
-    const handleLinkEl = document.getElementById("handleLink") as HTMLAnchorElement;
-    const avatarLinkEl = document.getElementById("avatarLink") as HTMLAnchorElement;
-    const bioEl = document.getElementById("bio") as HTMLDivElement;
-    const btn = document.getElementById("btn") as HTMLButtonElement;
-    const basedAsEl = document.getElementById("basedAs") as HTMLAnchorElement;
-
-    const shareBtn = document.getElementById("shareBtn") as HTMLButtonElement;
-    let lastWinner: any = null;
-
+    // socials
     (function initSocials() {
-      const creatorLink = document.getElementById("creatorLink") as HTMLAnchorElement;
-      const creatorImg = document.getElementById("creatorImg") as HTMLImageElement;
-      const baseLink = document.getElementById("baseLink") as HTMLAnchorElement;
+      const creatorLink = document.getElementById("creatorLink") as HTMLAnchorElement | null;
+      const creatorImg = document.getElementById("creatorImg") as HTMLImageElement | null;
+      const baseLink = document.getElementById("baseLink") as HTMLAnchorElement | null;
 
-      creatorLink.textContent = CREATOR.label;
-      creatorLink.href = CREATOR.url;
-      creatorImg.src = CREATOR.image;
+      if (creatorLink) {
+        creatorLink.textContent = CREATOR.label;
+        creatorLink.href = CREATOR.url;
+      }
+      if (creatorImg) creatorImg.src = CREATOR.image;
 
-      baseLink.textContent = BASEAPP.label;
-      baseLink.href = BASEAPP.url;
+      if (baseLink) {
+        baseLink.textContent = BASEAPP.label;
+        baseLink.href = BASEAPP.url;
+      }
     })();
+
+    const stageEl = document.getElementById("stage") as HTMLDivElement | null;
+    const imgEl = document.getElementById("img") as HTMLImageElement | null;
+    const handleLinkEl = document.getElementById("handleLink") as HTMLAnchorElement | null;
+    const avatarLinkEl = document.getElementById("avatarLink") as HTMLAnchorElement | null;
+    const bioEl = document.getElementById("bio") as HTMLDivElement | null;
+    const btn = document.getElementById("btn") as HTMLButtonElement | null;
+    const basedAsEl = document.getElementById("basedAs") as HTMLAnchorElement | null;
+    const shareBtn = document.getElementById("shareBtn") as HTMLButtonElement | null;
+
+    if (!stageEl || !imgEl || !handleLinkEl || !avatarLinkEl || !bioEl || !btn || !basedAsEl || !shareBtn) {
+      // DOM not ready or ids changed
+      return;
+    }
+
+    let lastWinner: any = null;
 
     function profileUrl(handle: string) {
       const u = String(handle || "").replace(/^@/, "");
@@ -95,39 +104,44 @@ export default function HomePage() {
       return new Promise((r) => setTimeout(r, ms));
     }
 
-    // Share URL -> points to /r which returns server-rendered meta tags + redirects
-    function buildShareLandingUrl(winner: any) {
-      const base = window.location.origin;
-      const u = new URL("/r", base);
-      u.searchParams.set("handle", winner.handle);
-      u.searchParams.set("img", winner.image || DEFAULT_AVATAR);
-      u.searchParams.set("bio", winner.bio || "");
-      return u.toString();
-    }
+    // ✅ IMPORTANT: share /r url (meta tags live there)
+    function buildXShareUrl(winner: any) {
+      const text = `I’m based as ${winner.handle} 😎\nHow based are you in 2026?`;
 
-    function buildXIntentUrl(winner: any) {
-      const text =
-        `I’m based as ${winner.handle} 😎\n` +
-        `How based are you in 2026?`;
-
-      const landing = buildShareLandingUrl(winner);
+      const landing = new URL("/r", window.location.origin);
+      landing.searchParams.set("handle", winner.handle);
+      landing.searchParams.set("bio", winner.bio || "");
+      landing.searchParams.set("img", winner.image || DEFAULT_AVATAR);
+      landing.searchParams.set("v", Date.now().toString()); // cache bust
 
       const intent = new URL("https://x.com/intent/tweet");
       intent.searchParams.set("text", text);
-      intent.searchParams.set("url", landing);
+      intent.searchParams.set("url", landing.toString());
       return intent.toString();
     }
 
-    shareBtn.addEventListener("click", () => {
-      if (!lastWinner) return;
-      window.open(buildXIntentUrl(lastWinner), "_blank", "noopener,noreferrer");
-    });
+    function clearCelebrate() {
+      stageEl.classList.remove("celebrate");
+    }
 
-    // ========= FULLSCREEN CONFETTI =========
-    const confettiCanvas = document.getElementById("confetti") as HTMLCanvasElement;
-    const ctx = confettiCanvas.getContext("2d")!;
+    function init() {
+      imgEl.src = DEFAULT_AVATAR;
+      handleLinkEl.textContent = "@…";
+      handleLinkEl.href = "#";
+      avatarLinkEl.href = "#";
+      bioEl.textContent = "Tap the button below.";
+      clearCelebrate();
+
+      lastWinner = null;
+      shareBtn.style.display = "none";
+    }
+
+    // ===== confetti =====
+    const confettiCanvas = document.getElementById("confetti") as HTMLCanvasElement | null;
+    const ctx = confettiCanvas?.getContext("2d") || null;
 
     function resizeConfetti() {
+      if (!confettiCanvas || !ctx) return;
       confettiCanvas.width = Math.floor(window.innerWidth * devicePixelRatio);
       confettiCanvas.height = Math.floor(window.innerHeight * devicePixelRatio);
       ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
@@ -163,15 +177,8 @@ export default function HomePage() {
       }
     }
 
-    function launchConfettiFull() {
-      resizeConfetti();
-      const now = performance.now();
-      confettiUntil = now + 2200;
-      spawnConfetti(220);
-      if (!confettiRaf) confettiRaf = requestAnimationFrame(tickConfetti);
-    }
-
     function tickConfetti(t: number) {
+      if (!ctx) return;
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
       if (t < confettiUntil) spawnConfetti(6);
@@ -209,20 +216,13 @@ export default function HomePage() {
       }
     }
 
-    function clearCelebrate() {
-      stageEl.classList.remove("celebrate");
-    }
-
-    function init() {
-      imgEl.src = DEFAULT_AVATAR;
-      handleLinkEl.textContent = "@…";
-      handleLinkEl.href = "#";
-      avatarLinkEl.href = "#";
-      bioEl.textContent = "Tap the button below.";
-      clearCelebrate();
-
-      lastWinner = null;
-      shareBtn.style.display = "none";
+    function launchConfettiFull() {
+      if (!ctx) return;
+      resizeConfetti();
+      const now = performance.now();
+      confettiUntil = now + 2200;
+      spawnConfetti(220);
+      if (!confettiRaf) confettiRaf = requestAnimationFrame(tickConfetti);
     }
 
     async function spin() {
@@ -245,7 +245,6 @@ export default function HomePage() {
       }
 
       show(winner);
-
       lastWinner = winner;
       shareBtn.style.display = "inline-block";
 
@@ -255,19 +254,17 @@ export default function HomePage() {
       btn.disabled = false;
     }
 
+    shareBtn.addEventListener("click", () => {
+      if (!lastWinner) return;
+      window.open(buildXShareUrl(lastWinner), "_blank", "noopener,noreferrer");
+    });
+
     btn.addEventListener("click", spin);
     window.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !btn.disabled) spin();
     });
 
     init();
-
-    (function preload() {
-      for (const p of people) {
-        const im = new Image();
-        im.src = p.image;
-      }
-    })();
   }, []);
 
   return (
@@ -364,7 +361,6 @@ export default function HomePage() {
           transition: opacity .18s ease;
         }
         .stage.celebrate .congratsText{ opacity: 1; }
-
         .avatarLink{
           display:block;
           border-radius: 40px;
@@ -380,8 +376,12 @@ export default function HomePage() {
           box-shadow: 0 18px 44px rgba(0,0,0,.10);
         }
         .avatarLink:active{ transform: translateY(0px) scale(.995); }
-        .avatarLink img{ width:100%; height:100%; object-fit:cover; display:block; }
-
+        .avatarLink img{
+          width:100%;
+          height:100%;
+          object-fit:cover;
+          display:block;
+        }
         .meta{ max-width: 72ch; }
         .handleLink{
           display:inline-block;
@@ -417,7 +417,6 @@ export default function HomePage() {
         }
         .basedLine a:hover{ border-bottom-color: rgba(10,10,10,.65); }
         .stage.celebrate .basedLine{ display:block; }
-
         .actions{
           display:flex;
           padding:24px 72px 28px;
@@ -458,7 +457,6 @@ export default function HomePage() {
         }
         .share:hover{ transform: translateY(-1px); }
         .share:active{ transform: translateY(0px) scale(.995); }
-
         .miniLinks{
           position: fixed;
           right: 26px;
@@ -509,7 +507,6 @@ export default function HomePage() {
           text-decoration: underline;
           text-underline-offset: 4px;
         }
-
         #confetti{
           position:fixed;
           inset:0;
@@ -518,7 +515,6 @@ export default function HomePage() {
           pointer-events:none;
           z-index: 25;
         }
-
         @media (max-width: 560px){
           .stage{ padding:24px 18px 22px; gap:12px; }
           .avatarLink{ width:140px; height:140px; border-radius:24px; }
