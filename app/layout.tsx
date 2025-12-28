@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://based-me.vercel.app"),
   title: "How based are you in 2026?",
   description: "Tap Based me — quick spin, and we’ll rate how based you are.",
 };
