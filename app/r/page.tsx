@@ -9,7 +9,7 @@ function clampStr(s: string, max = 140) {
 export async function generateMetadata({
   searchParams
 }: {
-  searchParams: { handle?: string; img?: string; bio?: string };
+  searchParams: { handle?: string; img?: string; bio?: string; v?: string };
 }): Promise<Metadata> {
   const handle = clampStr(searchParams.handle || "@…", 32);
   const bio = clampStr(searchParams.bio || "", 120);
@@ -23,6 +23,7 @@ export async function generateMetadata({
   og.searchParams.set("handle", handle);
   if (bio) og.searchParams.set("bio", bio);
   if (img) og.searchParams.set("img", img);
+  if (searchParams.v) og.searchParams.set("v", searchParams.v); // pass through for cache bust
 
   return {
     title,
@@ -44,4 +45,3 @@ export async function generateMetadata({
 export default function ShareLanding() {
   redirect("/");
 }
-
