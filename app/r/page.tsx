@@ -1,66 +1,52 @@
-export const runtime = "edge";
+import type { Metadata } from "next";
 
-function safe(s: string | undefined, max = 120) {
-  const t = (s || "").toString().replace(/\s+/g, " ").trim();
-  return t.length > max ? t.slice(0, max - 1) + "…" : t;
+function absUrl(path: string) {
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://based-me.vercel.app";
+  return path.startsWith("http") ? path : `${base}${path}`;
 }
 
-export default function RPage({
+export async function generateMetadata({
   searchParams,
 }: {
   searchParams: { handle?: string; bio?: string; img?: string };
-}) {
-  const handle = safe(searchParams.handle || "@…", 36);
-  const bio = safe(searchParams.bio || "", 120);
-  const img = safe(searchParams.img || "", 600);
+}): Promise<Metadata> {
+  const handle = searchParams.handle || "@…";
+  const bio = searchParams.bio || "How based are you in 2026?";
+  const img = searchParams.img || "/avatars/brian_armstrong.png";
 
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://based-me.vercel.app").replace(/\/$/, "");
-  const og = `${base}/og?handle=${encodeURIComponent(handle)}&bio=${encodeURIComponent(
-    bio
-  )}&img=${encodeURIComponent(img)}`;
+  const qs = new URLSearchParams({
+    handle,
+    bio,
+    img,
+  }).toString();
 
-  const canonical = `${base}/r?handle=${encodeURIComponent(handle)}&bio=${encodeURIComponent(
-    bio
-  )}&img=${encodeURIComponent(img)}`;
+  const ogImage = absUrl(`/og?${qs}`);
+  const pageUrl = absUrl(`/r?${qs}`);
 
-  const landing = `${base}/?handle=${encodeURIComponent(handle)}&bio=${encodeURIComponent(
-    bio
-  )}&img=${encodeURIComponent(img)}`;
+  return {
+    title: `I'm based as ${handle}`,
+    description: bio,
+    openGraph: {
+      title: `I'm based as ${handle}`,
+      description: bio,
+      url: pageUrl,
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `I'm based as ${handle}`,
+      description: bio,
+      images: [ogImage],
+    },
+  };
+}
 
-  const title = `I'm based as ${handle}`;
-  const desc = `How based are you in 2026?`;
-
+export default function Page() {
+  // можно редиректнуть на главную, либо показать твою UI
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
-
-        <title>{title}</title>
-        <meta name="description" content={desc} />
-        <link rel="canonical" href={canonical} />
-
-        {/* OpenGraph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content={title} />
-        <meta property="og:description" content={desc} />
-        <meta property="og:url" content={canonical} />
-        <meta property="og:image" content={og} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={title} />
-        <meta name="twitter:description" content={desc} />
-        <meta name="twitter:image" content={og} />
-
-        {/* IMPORTANT: do NOT server-redirect; do client refresh */}
-        <meta httpEquiv="refresh" content={`0;url=${landing}`} />
-      </head>
-      <body>
-        Redirecting…
-      </body>
-    </html>
+    <main style={{ padding: 24, fontFamily: "system-ui" }}>
+      <h1>Open this link on X to see the card preview</h1>
+      <p>Если ты видишь эту страницу — значит мета-теги отдаются.</p>
+    </main>
   );
 }
