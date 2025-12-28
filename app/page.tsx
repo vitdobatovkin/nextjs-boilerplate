@@ -1,12 +1,119 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useRef, useState } from "react";
 
-export default function Page() {
+type Person = { handle: string; image?: string; bio?: string };
+
+const DEFAULT_HANDLE = "@someone";
+const DEFAULT_BIO = "How based are you in 2026?";
+
+// ВАЖНО: image тут можно оставить как у тебя (remote), НО для OG мы использовать не будем.
+// OG всегда будет брать локальный файл из /public/avatars/{handleWithout@}.png
+const RAW_PARTICIPANTS: Person[] = [
+  { handle: "@brian_armstrong", image: "https://pbs.twimg.com/profile_images/1516832438818770944/n77EwnKU_400x400.png", bio: "Co-founder & CEO at Coinbase" },
+  { handle: "@emiliemc", image: "https://pbs.twimg.com/profile_images/1623399970287284224/A5DmX2nx_400x400.jpg", bio: "President and COO at Coinbase, Angel Investor" },
+  { handle: "@catferdon", image: "https://pbs.twimg.com/profile_images/570956786867396608/Ksld22NC_400x400.jpeg", bio: "cmo coinbase" },
+  { handle: "@maxbranzburg", image: "https://pbs.twimg.com/profile_images/1640358235931541506/UbOccG9U_400x400.jpg", bio: "consumer & business products coinbase" },
+  { handle: "@ShanAggarwal", image: "https://pbs.twimg.com/profile_images/1897730647378014208/nA2ih7KS_400x400.jpg", bio: "chief business officer coinbase" },
+  // ... добавь остальных
+];
+
+function sanitize(list: Person[]): Person[] {
+  const out: Person[] = [];
+  const seen = new Set<string>();
+  for (const p of list) {
+    const handle = (p?.handle || "").trim();
+    if (!handle.startsWith("@")) continue;
+    const key = handle.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      handle,
+      image: (p.image || "").trim(),
+      bio: (p.bio || "").trim(),
+    });
+  }
+  return out;
+}
+
+function profileUrl(handle: string) {
+  return `https://x.com/${handle.replace(/^@/, "")}`;
+}
+
+function buildSharePageUrl(winner: { handle: string; bio?: string }) {
+  const base = window.location.origin; // https://based-me.vercel.app
+  const u = new URL("/r", base);
+
+  // НЕ encode руками — URLSearchParams сделает это один раз
+  u.searchParams.set("handle", winner.handle);
+  u.searchParams.set("bio", winner.bio || DEFAULT_BIO);
+
+  // cache-bust чтобы X обновлял превью (меняй каждый раз)
+  u.searchParams.set("v", String(Date.now()));
+
+  return u.toString();
+}
+
+function buildXIntentUrl(winner: { handle: string; bio?: string }) {
+  const sharePageUrl = buildSharePageUrl(winner);
+  const text = `I’m based as ${winner.handle} 😎\nHow based are you in 2026?`;
+
+  const intent = new URL("https://x.com/intent/tweet");
+  intent.searchParams.set("text", text);
+  intent.searchParams.set("url", sharePageUrl);
+
+  return intent.toString();
+}
+
+export default function HomePage() {
+  const people = useMemo(() => sanitize(RAW_PARTICIPANTS), []);
+  const [current, setCurrent] = useState<Person>({
+    handle: DEFAULT_HANDLE,
+    image: "",
+    bio: "Tap the button below.",
+  });
+  const [celebrate, setCelebrate] = useState(false);
+  const [spinning, setSpinning] = useState(false);
+  const lastWinnerRef = useRef<Person | null>(null);
+
+  async function sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  async function spin() {
+    if (!people.length || spinning) return;
+    setSpinning(true);
+    setCelebrate(false);
+
+    const winner = people[Math.floor(Math.random() * people.length)];
+
+    for (let i = 0; i < 22; i++) {
+      setCurrent(people[Math.floor(Math.random() * people.length)]);
+      await sleep(45);
+    }
+    for (let i = 0; i < 12; i++) {
+      setCurrent(people[Math.floor(Math.random() * people.length)]);
+      await sleep(85 + i * 18);
+    }
+
+    setCurrent(winner);
+    lastWinnerRef.current = winner;
+    setCelebrate(true);
+    setSpinning(false);
+  }
+
+  function onShare() {
+    const w = lastWinnerRef.current;
+    if (!w) return;
+    window.open(buildXIntentUrl(w), "_blank", "noopener,noreferrer");
+  }
+
+  const url = profileUrl(current.handle);
+
   return (
     <>
-      <div className="texture" aria-hidden="true" />
-      <canvas id="confetti" aria-hidden="true" />
+      <div className="texture" aria-hidden="true"></div>
+      <canvas id="confetti" aria-hidden="true"></canvas>
 
       <div className="wrap">
         <div className="hero">
@@ -18,27 +125,31 @@ export default function Page() {
         </div>
 
         <section className="panel" aria-label="Based generator">
-          <div className="stage" id="stage" aria-live="polite">
-            <div className="congratsText" id="congratsText">
-              Congratulations
-            </div>
+          <div className={`stage ${celebrate ? "celebrate" : ""}`} aria-live="polite">
+            <div className="congratsText">Congratulations</div>
 
-            <a className="avatarLink" id="avatarLink" href="#" target="_blank" rel="noreferrer">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img id="img" alt="avatar" />
+            <a className="avatarLink" href={url} target="_blank" rel="noreferrer">
+              {/* на самой странице можно хоть remote img */}
+              <img
+                alt="avatar"
+                src={current.image || "/avatars/default.png"}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/avatars/default.png";
+                }}
+              />
             </a>
 
             <div className="meta">
-              <a className="handleLink" id="handleLink" href="#" target="_blank" rel="noreferrer">
-                @…
+              <a className="handleLink" href={url} target="_blank" rel="noreferrer">
+                {current.handle}
               </a>
-              <div className="bio" id="bio">
-                Tap the button below.
-              </div>
-              <div className="basedLine" id="basedLine">
+
+              <div className="bio">{current.bio || ""}</div>
+
+              <div className="basedLine">
                 You are based as{" "}
-                <a id="basedAs" href="#" target="_blank" rel="noreferrer">
-                  @…
+                <a href={url} target="_blank" rel="noreferrer">
+                  {current.handle}
                 </a>
               </div>
             </div>
@@ -46,10 +157,15 @@ export default function Page() {
 
           <div className="actions">
             <div className="btns">
-              <button className="primary" id="btn">
+              <button className="primary" onClick={spin} disabled={spinning}>
                 Based me
               </button>
-              <button className="share" id="shareBtn" style={{ display: "none" }}>
+
+              <button
+                className="share"
+                onClick={onShare}
+                style={{ display: celebrate ? "inline-block" : "none" }}
+              >
                 Share on X
               </button>
             </div>
@@ -57,40 +173,40 @@ export default function Page() {
         </section>
       </div>
 
-      {/* Minimal socials bottom-right */}
       <div className="miniLinks" aria-label="Social links">
         <div className="title">Socials</div>
 
         <div className="miniRow">
           <span className="miniIcon">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              id="creatorImg"
               src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
               alt="creator avatar"
             />
           </span>
-          <a className="miniMono" id="creatorLink" href="https://x.com/0x_mura" target="_blank" rel="noreferrer">
+          <a className="miniMono" href="https://x.com/0x_mura" target="_blank" rel="noreferrer">
             CREATED BY
           </a>
         </div>
 
         <div className="miniRow">
-          <span className="miniIcon" aria-hidden="true" id="baseIcon">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+          <span className="miniIcon" aria-hidden="true">
             <img
               alt="Base"
               src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Crect x='2' y='2' width='16' height='16' rx='5' fill='%230000FF'/%3E%3C/svg%3E"
             />
           </span>
-          <a className="miniMono" id="baseLink" href="https://base.app/invite/muraa/HCR6DPRH" target="_blank" rel="noreferrer">
+          <a
+            className="miniMono"
+            href="https://base.app/invite/muraa/HCR6DPRH"
+            target="_blank"
+            rel="noreferrer"
+          >
             BASE APP
           </a>
         </div>
       </div>
 
-      <ScriptBlock />
-
+      {/* Стили — как у тебя (перенёс без Tailwind) */}
       <style jsx global>{`
         :root {
           --bg: #ffffff;
@@ -354,8 +470,8 @@ export default function Page() {
           display: block;
         }
         .miniMono {
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
-            monospace;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+            "Courier New", monospace;
           font-size: 14px;
           letter-spacing: 0.02em;
           color: rgba(10, 10, 10, 0.55);
@@ -407,261 +523,4 @@ export default function Page() {
       `}</style>
     </>
   );
-}
-
-function ScriptBlock() {
-  React.useEffect(() => {
-    const DEFAULT_AVATAR = "https://pbs.twimg.com/profile_images/1868572161415532544/n1z9sXm4_400x400.jpg";
-
-    // ============================
-    // PUT YOUR RAW_PARTICIPANTS HERE
-    // ============================
-    const RAW_PARTICIPANTS = [
-    { handle:"@brian_armstrong", image:"https://pbs.twimg.com/profile_images/1516832438818770944/n77EwnKU_400x400.png", bio:"Co-founder & CEO at Coinbase" },
-   
-  ];
-
-    function sanitize(raw: Array<{ handle: string; image?: string; bio?: string }>) {
-      const out: Array<{ handle: string; image: string; bio: string }> = [];
-      const seen = new Set<string>();
-      for (const p of raw) {
-        if (!p || typeof p !== "object") continue;
-
-        const handle = String(p.handle || "").trim();
-        const image = String(p.image || "").trim();
-        const bio = String(p.bio || "").trim();
-
-        if (!handle.startsWith("@")) continue;
-
-        const key = handle.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-
-        out.push({ handle, image: image || DEFAULT_AVATAR, bio });
-      }
-      return out;
-    }
-
-    const people = sanitize(RAW_PARTICIPANTS);
-
-    const stageEl = document.getElementById("stage") as HTMLDivElement | null;
-    const imgEl = document.getElementById("img") as HTMLImageElement | null;
-    const handleLinkEl = document.getElementById("handleLink") as HTMLAnchorElement | null;
-    const avatarLinkEl = document.getElementById("avatarLink") as HTMLAnchorElement | null;
-    const bioEl = document.getElementById("bio") as HTMLDivElement | null;
-    const btn = document.getElementById("btn") as HTMLButtonElement | null;
-    const basedAsEl = document.getElementById("basedAs") as HTMLAnchorElement | null;
-
-    const shareBtn = document.getElementById("shareBtn") as HTMLButtonElement | null;
-    let lastWinner: { handle: string; image: string; bio: string } | null = null;
-
-    function profileUrl(handle: string) {
-      const u = String(handle || "").replace(/^@/, "");
-      return `https://x.com/${u}`;
-    }
-
-    function show(p: { handle: string; image: string; bio: string }) {
-      if (!imgEl || !handleLinkEl || !avatarLinkEl || !bioEl || !basedAsEl) return;
-
-      imgEl.src = p.image || DEFAULT_AVATAR;
-
-      const url = profileUrl(p.handle);
-      handleLinkEl.textContent = p.handle;
-      handleLinkEl.href = url;
-      avatarLinkEl.href = url;
-
-      bioEl.textContent = p.bio || "";
-      basedAsEl.textContent = p.handle;
-      basedAsEl.href = url;
-    }
-
-    function sleep(ms: number) {
-      return new Promise((r) => setTimeout(r, ms));
-    }
-
-    function buildXShareUrl(winner: { handle: string; image: string; bio: string }) {
-        const text = `I’m based as ${winner.handle} 😎\nHow based are you in 2026?`;
-
-        const base = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, "");
-        const shareLink =
-            `${base}/r?handle=${encodeURIComponent(winner.handle)}` +
-            `&bio=${encodeURIComponent(winner.bio || "")}` +
-            `&img=${encodeURIComponent(winner.image || "")}`;
-
-        const intent = new URL("https://x.com/intent/tweet");
-        intent.searchParams.set("text", text);
-        intent.searchParams.set("url", shareLink);
-        return intent.toString();
-    }
-
-
-    shareBtn?.addEventListener("click", () => {
-      if (!lastWinner) return;
-      const shareUrl = buildXShareUrl(lastWinner);
-      window.open(shareUrl, "_blank", "noopener,noreferrer");
-    });
-
-    // ========= FULLSCREEN CONFETTI =========
-    const confettiCanvas = document.getElementById("confetti") as HTMLCanvasElement | null;
-    const ctx = confettiCanvas?.getContext("2d") || null;
-
-    function resizeConfetti() {
-      if (!confettiCanvas || !ctx) return;
-      confettiCanvas.width = Math.floor(window.innerWidth * devicePixelRatio);
-      confettiCanvas.height = Math.floor(window.innerHeight * devicePixelRatio);
-      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    }
-    window.addEventListener("resize", resizeConfetti);
-    resizeConfetti();
-
-    function rand(min: number, max: number) {
-      return Math.random() * (max - min) + min;
-    }
-    const CONFETTI_COLORS = ["#0000FF", "#00D54B", "#FFD12F", "#FF3B30", "#A7FF5A"];
-
-    let confettiParticles: Array<{
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      g: number;
-      w: number;
-      h: number;
-      rot: number;
-      vr: number;
-      alpha: number;
-      fade: number;
-      color: string;
-    }> = [];
-    let confettiRaf: number | null = null;
-    let confettiUntil = 0;
-
-    function spawnConfetti(count: number) {
-      for (let i = 0; i < count; i++) {
-        confettiParticles.push({
-          x: rand(0, window.innerWidth),
-          y: rand(-window.innerHeight * 0.6, -10),
-          vx: rand(-0.8, 0.8),
-          vy: rand(2.2, 5.4),
-          g: rand(0.015, 0.035),
-          w: rand(5, 10),
-          h: rand(6, 16),
-          rot: rand(0, Math.PI * 2),
-          vr: rand(-0.18, 0.18),
-          alpha: 1,
-          fade: rand(0.004, 0.01),
-          color: CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0]
-        });
-      }
-    }
-
-    function tickConfetti(t: number) {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
-      if (t < confettiUntil) {
-        spawnConfetti(6);
-      }
-
-      for (const p of confettiParticles) {
-        p.vy += p.g;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rot += p.vr;
-        p.alpha = Math.max(0, p.alpha - p.fade);
-
-        ctx.save();
-        ctx.globalAlpha = p.alpha;
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-        ctx.restore();
-      }
-
-      confettiParticles = confettiParticles.filter(
-        (p) => p.alpha > 0 && p.y < window.innerHeight + 60 && p.x > -60 && p.x < window.innerWidth + 60
-      );
-
-      if (t < confettiUntil || confettiParticles.length > 0) {
-        confettiRaf = requestAnimationFrame(tickConfetti);
-      } else {
-        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-        confettiRaf = null;
-        confettiParticles = [];
-      }
-    }
-
-    function launchConfettiFull() {
-      resizeConfetti();
-      const now = performance.now();
-      confettiUntil = now + 2200;
-      spawnConfetti(220);
-      if (!confettiRaf) confettiRaf = requestAnimationFrame(tickConfetti);
-    }
-
-    function init() {
-      if (!imgEl || !handleLinkEl || !avatarLinkEl || !bioEl) return;
-
-      imgEl.src = DEFAULT_AVATAR;
-      handleLinkEl.textContent = "@…";
-      handleLinkEl.href = "#";
-      avatarLinkEl.href = "#";
-      bioEl.textContent = "Tap the button below.";
-
-      stageEl?.classList.remove("celebrate");
-
-      lastWinner = null;
-      if (shareBtn) shareBtn.style.display = "none";
-    }
-
-    async function spin() {
-      if (people.length === 0) return;
-
-      stageEl?.classList.remove("celebrate");
-      if (btn) btn.disabled = true;
-      if (shareBtn) shareBtn.style.display = "none";
-      lastWinner = null;
-
-      const winner = people[Math.floor(Math.random() * people.length)];
-
-      for (let i = 0; i < 22; i++) {
-        show(people[Math.floor(Math.random() * people.length)]);
-        await sleep(45);
-      }
-      for (let i = 0; i < 12; i++) {
-        show(people[Math.floor(Math.random() * people.length)]);
-        await sleep(85 + i * 18);
-      }
-
-      show(winner);
-
-      lastWinner = winner;
-      if (shareBtn) shareBtn.style.display = "inline-block";
-
-      stageEl?.classList.add("celebrate");
-      launchConfettiFull();
-
-      if (btn) btn.disabled = false;
-    }
-
-    btn?.addEventListener("click", spin);
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !btn?.disabled) spin();
-    });
-
-    init();
-
-    // preload
-    for (const p of people) {
-      const im = new Image();
-      im.src = p.image;
-    }
-
-    return () => {
-      window.removeEventListener("resize", resizeConfetti);
-    };
-  }, []);
-
-  return null;
 }
