@@ -1,9 +1,8 @@
-/** @jsxImportSource react */
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-function safe(s: string, max = 80) {
+function safe(s: string, max = 120) {
   const t = (s || "").toString().replace(/\s+/g, " ").trim();
   return t.length > max ? t.slice(0, max - 1) + "…" : t;
 }
@@ -13,76 +12,67 @@ export async function GET(req: Request) {
 
   const handle = safe(searchParams.get("handle") || "@…", 36);
   const bio = safe(searchParams.get("bio") || "", 120);
-  const img =
-    searchParams.get("img") ||
-    "https://pbs.twimg.com/profile_images/1868572161415532544/n1z9sXm4_400x400.jpg";
+  const img = searchParams.get("img") || "";
 
   return new ImageResponse(
     (
       <div
         style={{
-          width: 1200,
-          height: 630,
+          width: "1200px",
+          height: "630px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "#ffffff",
+          background: "#ffffff",
           color: "#0A0B0D",
           position: "relative",
-          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont"
+          fontFamily:
+            'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial',
         }}
       >
         <div
           style={{
             position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(900px 520px at 62% 12%, rgba(10,71,255,.12), transparent 65%)"
-          }}
-        />
-
-        <div
-          style={{
-            fontSize: 28,
-            letterSpacing: "0.22em",
-            opacity: 0.55,
+            top: 42,
+            fontSize: 24,
+            letterSpacing: 4,
+            textTransform: "uppercase",
+            color: "rgba(10,10,10,.55)",
             fontWeight: 800,
-            textTransform: "uppercase"
           }}
         >
-          Congratulations
+          CONGRATULATIONS
         </div>
 
         <div
           style={{
-            marginTop: 28,
-            width: 280,
-            height: 280,
-            borderRadius: 56,
+            width: 260,
+            height: 260,
+            borderRadius: 40,
             overflow: "hidden",
-            border: "2px solid rgba(10,10,10,.10)",
+            border: "1px solid rgba(10,10,10,.12)",
             background: "#fff",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center"
+            justifyContent: "center",
           }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={img}
-            width={280}
-            height={280}
-            alt="avatar"
+            src={img || "https://pbs.twimg.com/profile_images/1868572161415532544/n1z9sXm4_400x400.jpg"}
+            width={260}
+            height={260}
             style={{ objectFit: "cover" }}
           />
         </div>
 
         <div
           style={{
-            marginTop: 22,
-            fontSize: 72,
-            fontWeight: 900,
-            letterSpacing: "-0.04em"
+            marginTop: 24,
+            fontSize: 64,
+            fontWeight: 950,
+            letterSpacing: -2,
           }}
         >
           {handle}
@@ -90,30 +80,36 @@ export async function GET(req: Request) {
 
         <div
           style={{
-            marginTop: 14,
-            fontSize: 30,
-            opacity: 0.7,
-            textAlign: "center",
-            padding: "0 80px"
+            marginTop: 12,
+            fontSize: 28,
+            color: "rgba(10,10,10,.65)",
           }}
         >
-          {bio || "How based are you in 2026?"}
+          {bio}
         </div>
 
         <div
           style={{
-            marginTop: 22,
-            fontSize: 22,
-            opacity: 0.55
+            marginTop: 18,
+            fontSize: 20,
+            color: "rgba(10,10,10,.55)",
           }}
         >
-          How based are you in 2026?
+          You are based as <span style={{ fontWeight: 900 }}>{handle}</span>
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            bottom: 28,
+            fontSize: 22,
+            color: "rgba(10,10,10,.55)",
+          }}
+        >
+          based-me.vercel.app
         </div>
       </div>
     ),
-    {
-      width: 1200,
-      height: 630
-    }
+    { width: 1200, height: 630 }
   );
 }
