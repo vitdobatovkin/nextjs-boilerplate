@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://based-me.vercel.app"), // <- ВАЖНО
   title: "How based are you in 2026?",
-  description: "Tap Based me — quick spin, and we’ll rate how based you are."
+  description: "Tap Based me — quick spin, and we’ll rate how based you are.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
