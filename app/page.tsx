@@ -530,15 +530,21 @@ function ScriptBlock() {
       return new Promise((r) => setTimeout(r, ms));
     }
 
-    function buildXShareUrl(winner: { handle: string }) {
-      const text = `I’m based as ${winner.handle} 😎\nHow based are you in 2026?`;
-      const url = window.location.href.split("#")[0];
+    function buildXShareUrl(winner: { handle: string; image: string; bio: string }) {
+        const text = `I’m based as ${winner.handle} 😎\nHow based are you in 2026?`;
 
-      const intent = new URL("https://x.com/intent/tweet");
-      intent.searchParams.set("text", text);
-      intent.searchParams.set("url", url);
-      return intent.toString();
+        const base = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, "");
+        const shareLink =
+            `${base}/r?handle=${encodeURIComponent(winner.handle)}` +
+            `&bio=${encodeURIComponent(winner.bio || "")}` +
+            `&img=${encodeURIComponent(winner.image || "")}`;
+
+        const intent = new URL("https://x.com/intent/tweet");
+        intent.searchParams.set("text", text);
+        intent.searchParams.set("url", shareLink);
+        return intent.toString();
     }
+
 
     shareBtn?.addEventListener("click", () => {
       if (!lastWinner) return;
