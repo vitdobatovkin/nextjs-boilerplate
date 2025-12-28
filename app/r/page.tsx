@@ -8,6 +8,8 @@ type Props = {
   };
 };
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const handle = (searchParams.handle || "@someone").trim();
   const bio = (searchParams.bio || "How based are you in 2026?").trim();
