@@ -7,12 +7,15 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
 
     const handle = searchParams.get("handle") || "@someone";
-    const bio = searchParams.get("bio") || "How based are you in 2026?";
-    const img = searchParams.get("img") || "/avatars/brian_armstrong.png";
+    const bio =
+      searchParams.get("bio") || "How based are you in 2026?";
 
-    const imgUrl = img.startsWith("http")
-      ? img
-      : `https://based-me.vercel.app${img}`;
+    const rawImg = searchParams.get("img");
+
+    const imgUrl =
+      rawImg && rawImg.startsWith("https://")
+        ? rawImg
+        : "https://based-me.vercel.app/avatars/brian_armstrong.png";
 
     return new ImageResponse(
       (
@@ -21,33 +24,32 @@ export async function GET(req: Request) {
             width: "1200px",
             height: "630px",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
             background: "#ffffff",
             fontFamily: "system-ui",
           }}
         >
+          <img
+            src={imgUrl}
+            width={200}
+            height={200}
+            style={{ borderRadius: "24px", marginBottom: "24px" }}
+          />
+
+          <div style={{ fontSize: 48, fontWeight: 700 }}>
+            {handle}
+          </div>
+
           <div
             style={{
-              display: "flex",
-              gap: 40,
-              alignItems: "center",
+              marginTop: 12,
+              fontSize: 28,
+              color: "#666",
             }}
           >
-            <img
-              src={imgUrl}
-              width={260}
-              height={260}
-              style={{ borderRadius: 24 }}
-            />
-            <div>
-              <div style={{ fontSize: 56, fontWeight: 900 }}>
-                {handle}
-              </div>
-              <div style={{ fontSize: 28, color: "#555" }}>
-                {bio}
-              </div>
-            </div>
+            {bio}
           </div>
         </div>
       ),
