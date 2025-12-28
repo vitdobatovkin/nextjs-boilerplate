@@ -1,47 +1,58 @@
-import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-function clampStr(s: string, max = 140) {
-  const clean = (s || "").toString().replace(/\s+/g, " ").trim();
-  return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;
+export const runtime = "edge";
+
+function safe(s: string | null, max = 120) {
+  const t = (s || "").toString().replace(/\s+/g, " ").trim();
+  return t.length > max ? t.slice(0, max - 1) + "…" : t;
+}
+
+export default function RPage({
+  searchParams,
+}: {
+  searchParams: { handle?: string; bio?: string; img?: string };
+}) {
+  const handle = safe(searchParams.handle || "@…", 36);
+  const bio = safe(searchParams.bio || "", 120);
+  const img = safe(searchParams.img || "", 400);
+
+  // редирект юзера на главную (X успеет взять мета при скрейпе)
+  // важно: X сам НЕ исполняет JS, ему нужен SSR HTML
+  redirect(
+    `/?handle=${encodeURIComponent(handle)}&bio=${encodeURIComponent(bio)}&img=${encodeURIComponent(img)}`
+  );
 }
 
 export async function generateMetadata({
-  searchParams
+  searchParams,
 }: {
-  searchParams: { handle?: string; img?: string; bio?: string; v?: string };
-}): Promise<Metadata> {
-  const handle = clampStr(searchParams.handle || "@…", 32);
-  const bio = clampStr(searchParams.bio || "", 120);
-  const img = searchParams.img || "";
+  searchParams: { handle?: string; bio?: string; img?: string };
+}) {
+  const handle = safe(searchParams.handle || "@…", 36);
+  const bio = safe(searchParams.bio || "", 120);
+  const img = safe(searchParams.img || "", 400);
 
-  const title = "How based are you in 2026?";
-  const description = bio ? `I’m based as ${handle} 😎 — ${bio}` : `I’m based as ${handle} 😎`;
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://based-me.vercel.app";
+  const og = `${base}/og?handle=${encodeURIComponent(handle)}&bio=${encodeURIComponent(bio)}&img=${encodeURIComponent(
+    img
+  )}`;
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const og = new URL("/og", base);
-  og.searchParams.set("handle", handle);
-  if (bio) og.searchParams.set("bio", bio);
-  if (img) og.searchParams.set("img", img);
-  if (searchParams.v) og.searchParams.set("v", searchParams.v); // pass through for cache bust
+  const title = `I'm based as ${handle}`;
+  const desc = `How based are you in 2026?`;
 
   return {
     title,
-    description,
+    description: desc,
     openGraph: {
       title,
-      description,
-      images: [{ url: og.toString(), width: 1200, height: 630 }]
+      description: desc,
+      images: [{ url: og, width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title,
-      description,
-      images: [og.toString()]
-    }
+      description: desc,
+      images: [og],
+    },
   };
-}
-
-export default function ShareLanding() {
-  redirect("/");
 }
