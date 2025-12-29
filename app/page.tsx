@@ -73,6 +73,14 @@ function mod(n: number, m: number) {
   return ((n % m) + m) % m;
 }
 
+function clamp(v: number, a: number, b: number) {
+  return Math.max(a, Math.min(b, v));
+}
+
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
 // ===== CONFETTI (fullscreen) =====
 type ConfettiParticle = {
   x: number;
@@ -198,6 +206,8 @@ function useFullscreenConfetti() {
   return { canvasRef, launch };
 }
 
+type Mode = "idle" | "spinning" | "locked";
+
 export default function HomePage() {
   const people = useMemo(() => sanitize(RAW_PARTICIPANTS), []);
   const { canvasRef, launch } = useFullscreenConfetti();
@@ -205,75 +215,193 @@ export default function HomePage() {
   const [current, setCurrent] = useState<Person | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [spinning, setSpinning] = useState(false);
-  const [cursor, setCursor] = useState(0);
   const lastWinnerRef = useRef<Person | null>(null);
+
+  // --- reel animation refs ---
+  const modeRef = useRef<Mode>("idle");
+  const rafReelRef = useRef<number | null>(null);
+  const lastTRef = useRef<number>(0);
+  const posRef = useRef<number>(0); // continuous index (float)
+  const liveIndexRef = useRef<number>(0);
+
+  // spin tween
+  const tweenRef = useRef<{
+    active: boolean;
+    startPos: number;
+    endPos: number;
+    t0: number;
+    dur: number;
+    winnerIndex: number;
+  }>({
+    active: false,
+    startPos: 0,
+    endPos: 0,
+    t0: 0,
+    dur: 0,
+    winnerIndex: 0,
+  });
+
+  // force re-render for reel frames (small)
+  const [, forceFrame] = useState(0);
 
   useEffect(() => {
     preload("/avatars/default.png");
   }, []);
 
+  // init reel pos + preload some
   useEffect(() => {
     if (!people.length) return;
-    setCursor(((Math.random() * people.length) | 0) ?? 0);
+
+    const start = (Math.random() * people.length) | 0;
+    posRef.current = start + 0.15; // slight fractional -> "alive"
+    liveIndexRef.current = mod(Math.round(posRef.current), people.length);
+
     // preload a few around start
-    for (let i = 0; i < Math.min(10, people.length); i++) {
-      preload(localAvatarSrc(people[i].handle));
+    for (let d = -6; d <= 6; d++) {
+      const p = people[mod(start + d, people.length)];
+      if (p) preload(localAvatarSrc(p.handle));
     }
+
+    // optional: show a live center even before click
+    setCurrent(people[liveIndexRef.current] ?? null);
+
+    // start idle loop
+    startReelLoop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people.length]);
 
-  // idle reel
+  // cleanup
   useEffect(() => {
-    if (!people.length) return;
-    if (spinning) return;
+    return () => {
+      if (rafReelRef.current) cancelAnimationFrame(rafReelRef.current);
+      rafReelRef.current = null;
+    };
+  }, []);
 
-    const id = window.setInterval(() => {
-      setCursor((c) => (c + 1) % people.length);
-    }, 900);
+  function stopReelLoop() {
+    if (rafReelRef.current) cancelAnimationFrame(rafReelRef.current);
+    rafReelRef.current = null;
+    lastTRef.current = 0;
+  }
 
-    return () => window.clearInterval(id);
-  }, [people.length, spinning]);
+  function startReelLoop() {
+    if (rafReelRef.current) return;
 
-  async function sleep(ms: number) {
-    return new Promise((r) => setTimeout(r, ms));
+    const tick = (t: number) => {
+      rafReelRef.current = requestAnimationFrame(tick);
+
+      const len = people.length;
+      if (!len) return;
+
+      const last = lastTRef.current || t;
+      const dt = clamp((t - last) / 1000, 0, 0.05);
+      lastTRef.current = t;
+
+      // --- update pos ---
+      if (tweenRef.current.active) {
+        const tw = tweenRef.current;
+        const tt = clamp((t - tw.t0) / tw.dur, 0, 1);
+        const e = easeOutCubic(tt);
+        posRef.current = tw.startPos + (tw.endPos - tw.startPos) * e;
+
+        if (tt >= 1) {
+          // snap exact winner
+          posRef.current = tw.endPos;
+          tweenRef.current.active = false;
+
+          const winner = people[tw.winnerIndex];
+          lastWinnerRef.current = winner ?? null;
+          setCurrent(winner ?? null);
+          setCelebrate(true);
+          setSpinning(false);
+          modeRef.current = "locked";
+          launch();
+
+          // stop loop completely until next click
+          stopReelLoop();
+          return;
+        }
+      } else {
+        const mode = modeRef.current;
+
+        if (mode === "idle") {
+          // slow continuous idle movement (indices per second)
+          posRef.current += dt * 0.55;
+        }
+        // locked: loop is stopped, so nothing to do
+      }
+
+      // keep within reasonable bounds
+      // (pos can grow large during spins -> ok, but keep it tame)
+      if (posRef.current > 1e9) posRef.current = mod(posRef.current, len);
+
+      // update current to nearest center index during movement
+      const idx = mod(Math.round(posRef.current), len);
+      if (idx !== liveIndexRef.current) {
+        liveIndexRef.current = idx;
+        const p = people[idx];
+        if (p) {
+          setCurrent(p);
+          // preload neighbors to reduce “bad images”
+          for (let d = -6; d <= 6; d++) {
+            const pp = people[mod(idx + d, len)];
+            if (pp) preload(localAvatarSrc(pp.handle));
+          }
+        }
+      }
+
+      // re-render reel positions smoothly
+      forceFrame((x) => (x + 1) % 1_000_000);
+    };
+
+    rafReelRef.current = requestAnimationFrame(tick);
   }
 
   async function spin() {
-    if (!people.length || spinning) return;
+    if (!people.length) return;
+    if (spinning) return;
 
+    // start again from locked: clear celebration but keep winner visible until motion starts
     setSpinning(true);
     setCelebrate(false);
     lastWinnerRef.current = null;
 
-    const winnerIndex = Math.floor(Math.random() * people.length);
+    // ensure loop is running
+    modeRef.current = "spinning";
+    startReelLoop();
+
+    const len = people.length;
+
+    // choose winner
+    const winnerIndex = (Math.random() * len) | 0;
     const winner = people[winnerIndex];
-    preload(localAvatarSrc(winner.handle));
+    if (winner) preload(localAvatarSrc(winner.handle));
 
-    // fast phase
-    for (let i = 0; i < 22; i++) {
-      const idx = Math.floor(Math.random() * people.length);
-      const p = people[idx];
-      preload(localAvatarSrc(p.handle));
-      setCurrent(p);
-      setCursor(idx);
-      await sleep(45);
-    }
+    // make sure we spin forward several full loops (slot-machine feel)
+    const startPos = posRef.current;
+    const baseStart = Math.floor(startPos);
+    const startNorm = startPos - baseStart; // keep fraction
+    const startIndex = mod(Math.round(startPos), len);
 
-    // slow phase
-    for (let i = 0; i < 12; i++) {
-      const idx = Math.floor(Math.random() * people.length);
-      const p = people[idx];
-      preload(localAvatarSrc(p.handle));
-      setCurrent(p);
-      setCursor(idx);
-      await sleep(85 + i * 18);
-    }
+    // compute a forward distance to land exactly on winnerIndex
+    // distance in indices going forward from current nearest index
+    const forward = mod(winnerIndex - startIndex, len);
 
-    setCurrent(winner);
-    setCursor(winnerIndex);
-    lastWinnerRef.current = winner;
-    setCelebrate(true);
-    launch();
-    setSpinning(false);
+    // add extra loops for drama (2..4)
+    const loops = 2 + ((Math.random() * 3) | 0);
+    const distance = loops * len + forward;
+
+    const endPos = startPos + distance; // keep fraction continuity
+    const dur = 1700 + loops * 450; // longer with more loops
+
+    tweenRef.current = {
+      active: true,
+      startPos,
+      endPos: endPos - startNorm, // end exactly at integer index (center aligned)
+      t0: performance.now(),
+      dur,
+      winnerIndex,
+    };
   }
 
   function onShare() {
@@ -283,6 +411,18 @@ export default function HomePage() {
   }
 
   const url = current ? profileUrl(current.handle) : "#";
+
+  // reel render window
+  const len = people.length;
+  const pos = posRef.current;
+  const base = Math.floor(pos);
+  const frac = pos - base; // 0..1
+  const centerIdx = len ? mod(Math.round(pos), len) : 0;
+
+  // layout constants
+  const STEP = 92; // px between slots
+  const WINDOW = 9; // visible items
+  const HALF = Math.floor(WINDOW / 2);
 
   return (
     <>
@@ -302,26 +442,40 @@ export default function HomePage() {
           <div className={`stage ${celebrate ? "celebrate" : ""}`} aria-live="polite">
             <div className="congratsText">Congratulations</div>
 
-            {/* REEL */}
-            <div className={`reel ${spinning ? "isSpinning" : ""}`} aria-label="avatar reel">
-              <div className="reelTrack">
-                {[-3, -2, -1, 0, 1, 2, 3].map((d) => {
-                  const idx = people.length ? mod(cursor + d, people.length) : 0;
+            {/* SLOT-MACHINE REEL */}
+            <div className={`slot ${spinning ? "isSpinning" : ""}`} aria-label="slot reel">
+              <div className="slotMask" aria-hidden="true"></div>
+
+              <div className="slotTrack" role="presentation">
+                {Array.from({ length: WINDOW }).map((_, i) => {
+                  const offset = i - HALF; // -4..4
+                  const idx = len ? mod(base + offset, len) : 0;
                   const p = people[idx];
 
-                  const isCenter = d === 0 && !!current;
-                  const href = isCenter && current ? url : undefined;
+                  const dist = Math.abs(offset - frac);
+                  const scale = 1 + Math.max(0, 1.65 - dist) * 0.95; // center grows smoothly
+                  const opacity = clamp(1.05 - dist * 0.22, 0.45, 1);
+
+                  const x = (offset - frac) * STEP;
+
+                  // only center slot is clickable when locked / celebrate (winner is shown)
+                  const isCenterVisual = Math.abs(offset - frac) < 0.55;
+                  const allowClick = isCenterVisual && !!current && modeRef.current === "locked";
 
                   return (
                     <a
-                      key={`${idx}-${d}`}
-                      className={`reelItem ${d === 0 ? "center" : ""}`}
-                      href={href}
-                      target={href ? "_blank" : undefined}
-                      rel={href ? "noreferrer" : undefined}
+                      key={`${idx}-${offset}`}
+                      className={`slotItem ${isCenterVisual ? "center" : ""}`}
+                      href={allowClick ? url : undefined}
+                      target={allowClick ? "_blank" : undefined}
+                      rel={allowClick ? "noreferrer" : undefined}
                       aria-label={p?.handle || "avatar"}
                       onClick={(e) => {
-                        if (!href) e.preventDefault();
+                        if (!allowClick) e.preventDefault();
+                      }}
+                      style={{
+                        transform: `translate3d(${x}px,0,0) scale(${scale})`,
+                        opacity,
                       }}
                     >
                       <img
@@ -336,6 +490,9 @@ export default function HomePage() {
                   );
                 })}
               </div>
+
+              {/* center frame */}
+              <div className="slotFrame" aria-hidden="true"></div>
             </div>
 
             <div className="meta">
@@ -367,7 +524,7 @@ export default function HomePage() {
 
           <div className="actions">
             <div className="btns">
-              <button className="primary" onClick={spin} disabled={spinning || !people.length}>
+              <button className="primary" onClick={spin} disabled={!people.length}>
                 {spinning ? "Spinning…" : "Based me"}
               </button>
 
@@ -385,12 +542,7 @@ export default function HomePage() {
 
       {/* creator badge bottom-right */}
       <div className="creatorBadge">
-        <a
-          href="https://x.com/0x_mura"
-          target="_blank"
-          rel="noreferrer"
-          className="creatorRow"
-        >
+        <a href="https://x.com/0x_mura" target="_blank" rel="noreferrer" className="creatorRow">
           <img
             src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
             alt="0x_mura"
@@ -401,12 +553,7 @@ export default function HomePage() {
           </span>
         </a>
 
-        <a
-          href="https://base.app/invite/muraa/HCR6DPRH"
-          target="_blank"
-          rel="noreferrer"
-          className="baseJoin"
-        >
+        <a href="https://base.app/invite/muraa/HCR6DPRH" target="_blank" rel="noreferrer" className="baseJoin">
           Join Base App
         </a>
       </div>
@@ -512,53 +659,75 @@ export default function HomePage() {
         }
         .stage.celebrate .congratsText{ opacity: 1; }
 
-        /* ===== REEL styles ===== */
-        .reel{
-          width: min(560px, 92vw);
+        /* ===== SLOT MACHINE REEL ===== */
+        .slot{
+          width: min(720px, 92vw);
           height: 280px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
           position: relative;
-        }
-        .reelTrack{
           display:flex;
           align-items:center;
           justify-content:center;
-          gap: 12px;
+        }
+        .slotTrack{
+          position: relative;
           width: 100%;
+          height: 100%;
           overflow: hidden;
-          padding: 8px 10px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
         }
-        .reelItem{
-          width: 74px;
-          height: 74px;
+
+        .slotItem{
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 86px;
+          height: 86px;
+          margin-left: -43px;
+          margin-top: -43px;
+
           border-radius: 18px;
-          overflow:hidden;
-          border:1px solid rgba(10,10,10,.10);
+          overflow: hidden;
+          border: 1px solid rgba(10,10,10,.10);
           background: var(--card);
+          box-shadow: 0 10px 24px rgba(0,0,0,.06);
           display:block;
-          flex: 0 0 auto;
-          opacity: .62;
-          transform: scale(.86);
-          transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease;
+
+          /* no transition — movement is via rAF (smooth) */
+          will-change: transform, opacity;
         }
-        .reelItem img{
+        .slotItem img{
           width:100%;
           height:100%;
-          object-fit:cover;
+          object-fit: cover;
           display:block;
         }
-        .reelItem.center{
-          width: 260px;
-          height: 260px;
+        .slotFrame{
+          position:absolute;
+          top: 50%;
+          left: 50%;
+          width: 270px;
+          height: 270px;
+          transform: translate(-50%,-50%);
           border-radius: 40px;
-          opacity: 1;
-          transform: scale(1);
-          box-shadow: 0 18px 44px rgba(0,0,0,.10);
+          pointer-events:none;
+
+          border: 1px solid rgba(10,10,10,.12);
+          box-shadow: 0 22px 58px rgba(0,0,0,.10);
+          background: rgba(255,255,255,.04);
         }
-        .reel.isSpinning .reelItem{
-          transition-duration: .06s;
+        .slotMask{
+          position:absolute;
+          inset:0;
+          pointer-events:none;
+          border-radius: 28px;
+
+          /* subtle vignette to feel like a window */
+          background:
+            radial-gradient(280px 180px at 50% 50%, transparent 42%, rgba(255,255,255,.78) 78%),
+            linear-gradient(90deg, rgba(255,255,255,.88), rgba(255,255,255,.0) 18%, rgba(255,255,255,.0) 82%, rgba(255,255,255,.88));
+          opacity: .55;
         }
 
         .handleLink{
@@ -625,7 +794,7 @@ export default function HomePage() {
           box-shadow: 0 10px 26px rgba(0,0,0,.06);
         }
 
-        /* creator badge (kept as-is from your last version) */
+        /* creator badge (kept) */
         .creatorBadge{
           position: fixed;
           right: 20px;
@@ -685,9 +854,19 @@ export default function HomePage() {
           .bio{ font-size:14px; }
           .actions{ padding:16px 18px; }
 
-          .reel{ height: 210px; }
-          .reelItem{ width: 52px; height: 52px; border-radius: 14px; }
-          .reelItem.center{ width: 140px; height: 140px; border-radius: 24px; }
+          .slot{ height: 210px; }
+          .slotItem{
+            width: 58px;
+            height: 58px;
+            margin-left: -29px;
+            margin-top: -29px;
+            border-radius: 14px;
+          }
+          .slotFrame{
+            width: 150px;
+            height: 150px;
+            border-radius: 24px;
+          }
 
           .creatorBadge{
             right: 14px;
