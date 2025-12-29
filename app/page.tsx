@@ -545,17 +545,18 @@ export default function HomePage() {
           border:1px solid rgba(10,10,10,.14);
           box-shadow: 0 10px 26px rgba(0,0,0,.06);
         }
-                       .creatorBadge{
+                    .creatorBadge{
   position: fixed;
   right: 20px;
   bottom: 18px;
   z-index: 40;
 
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 10px;
 
   font-size: 13px;
+  line-height: 1;
 }
 
 .creatorRow{
@@ -564,12 +565,11 @@ export default function HomePage() {
   gap: 8px;
 
   text-decoration: none;
-  color: rgba(10,10,10,.60);
-  line-height: 1.2;
+  color: rgba(10,10,10,.55);
 }
 
 .creatorRow:hover{
-  color: rgba(10,10,10,.9);
+  color: rgba(10,10,10,.85);
 }
 
 .creatorAvatar{
@@ -584,12 +584,22 @@ export default function HomePage() {
   color: rgba(10,10,10,.75);
 }
 
+/* тонкий разделитель */
 .baseJoin{
+  position: relative;
+  padding-left: 14px;
+
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
   color: rgba(10,10,10,.45);
-  padding-left: 30px; /* выравнивание под текст, не под аватар */
+}
+
+.baseJoin::before{
+  content: "·";
+  position: absolute;
+  left: 4px;
+  color: rgba(10,10,10,.35);
 }
 
 .baseJoin:hover{
@@ -600,8 +610,10 @@ export default function HomePage() {
   .creatorBadge{
     right: 14px;
     bottom: 12px;
+    font-size: 12px;
   }
 }
+
 
       `}</style>  
     </>
