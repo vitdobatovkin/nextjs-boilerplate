@@ -332,28 +332,34 @@ export default function HomePage() {
         </section>
       </div>
 
-            {/* socials bottom-right */}
-      <div className="socials">
-        <div className="socialsTitle">Socials</div>
-
+            {/* creator badge bottom-right */}
+      <div className="creatorBadge">
         <a
-          className="socialsLink"
           href="https://x.com/0x_mura"
           target="_blank"
           rel="noreferrer"
+          className="creatorRow"
         >
-          X
+          <img
+            src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
+            alt="0x_mura"
+            className="creatorAvatar"
+          />
+          <span>
+            Created by <b>@0x_mura</b>
+          </span>
         </a>
 
         <a
-          className="socialsLink"
           href="https://base.app/invite/muraa/HCR6DPRH"
           target="_blank"
           rel="noreferrer"
+          className="baseJoin"
         >
-          BASE&nbsp;&nbsp;APP
+          Join Base App
         </a>
       </div>
+
 
 
       <style jsx global>{`
@@ -539,32 +545,48 @@ export default function HomePage() {
           border:1px solid rgba(10,10,10,.14);
           box-shadow: 0 10px 26px rgba(0,0,0,.06);
         }
-                .socials{
+                        .creatorBadge{
           position: fixed;
-          right: 22px;
+          right: 20px;
           bottom: 18px;
-          z-index: 30;
-          text-align: right;
-          user-select: none;
+          z-index: 40;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          font-size: 13px;
         }
-        .socialsTitle{
-          font-size: 14px;
-          font-weight: 600;
-          margin-bottom: 8px;
-          color: rgba(10,10,10,.9);
-        }
-        .socialsLink{
-          display:block;
-          font-size: 14px;
-          letter-spacing: .08em;
-          text-transform: uppercase;
-          color: rgba(10,10,10,.55);
+
+        .creatorRow{
+          display: flex;
+          align-items: center;
+          gap: 8px;
           text-decoration: none;
-          padding: 6px 0;
+          color: rgba(10,10,10,.8);
         }
-        .socialsLink:hover{
-          color: rgba(10,10,10,.9);
+
+        .creatorRow:hover{
+          color: rgba(10,10,10,1);
         }
+
+        .creatorAvatar{
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 1px solid rgba(0,0,0,.12);
+        }
+
+        .baseJoin{
+          font-size: 13px;
+          font-weight: 600;
+          text-decoration: none;
+          color: rgba(10,10,10,.6);
+        }
+
+        .baseJoin:hover{
+          color: rgba(10,10,10,1);
+        }
+
         @media (max-width: 560px){
           .stage{ padding:24px 18px 22px; gap:12px; }
           .avatarLink{ width:140px; height:140px; border-radius:24px; }
