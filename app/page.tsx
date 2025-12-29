@@ -221,7 +221,7 @@ export default function HomePage() {
   // --- reel animation refs ---
   const rafReelRef = useRef<number | null>(null);
   const lastTRef = useRef<number>(0);
-  const posRef = useRef<number>(0); // continuous index (float)
+  const posRef = useRef<number>(0); // float index
   const liveIndexRef = useRef<number>(0);
 
   // spin tween
@@ -241,28 +241,27 @@ export default function HomePage() {
     winnerIndex: 0,
   });
 
-  // force re-render for smooth movement
+  // force re-render during animation
   const [, forceFrame] = useState(0);
 
   useEffect(() => {
     preload("/avatars/default.png");
   }, []);
 
-  // init reel pos + preload some
   useEffect(() => {
     if (!people.length) return;
 
     const start = (Math.random() * people.length) | 0;
-    posRef.current = start + 0.0; // ровно, без "подпрыгивания"
+    posRef.current = start + 0.0;
     liveIndexRef.current = mod(Math.round(posRef.current), people.length);
 
-    for (let d = -10; d <= 10; d++) {
+    // preload around start
+    for (let d = -12; d <= 12; d++) {
       const p = people[mod(start + d, people.length)];
       if (p) preload(localAvatarSrc(p.handle));
     }
 
-    // ВАЖНО: по твоему требованию имя/био не показываем до результата,
-    // поэтому current можно держать, но UI меты не отрисуем пока не locked.
+    // показываем картинку в центре (мета скрыта, пока не locked)
     setCurrent(people[liveIndexRef.current] ?? null);
 
     startReelLoop();
@@ -314,27 +313,28 @@ export default function HomePage() {
           setMode("locked");
           launch();
 
-          // останавливаем до следующего клика
+          // стоп до следующего клика
           stopReelLoop();
           return;
         }
       } else {
         if (mode === "idle") {
-          // ровная линия, плавное движение
+          // медленно и плавно
           posRef.current += dt * 0.6;
         }
-        // locked: loop уже остановлен
       }
 
       if (posRef.current > 1e9) posRef.current = mod(posRef.current, len);
 
+      // обновляем center-аватар по ближайшему индексу
       const idx = mod(Math.round(posRef.current), len);
       if (idx !== liveIndexRef.current) {
         liveIndexRef.current = idx;
         const p = people[idx];
         if (p) {
           setCurrent(p);
-          for (let d = -10; d <= 10; d++) {
+          // preload neighbors
+          for (let d = -12; d <= 12; d++) {
             const pp = people[mod(idx + d, len)];
             if (pp) preload(localAvatarSrc(pp.handle));
           }
@@ -351,12 +351,12 @@ export default function HomePage() {
     if (!people.length) return;
     if (spinning) return;
 
-    // если стояли на победителе — снова запускаем ленту и прячем результат
     setSpinning(true);
     setCelebrate(false);
     setMode("spinning");
     lastWinnerRef.current = null;
 
+    // запускаем луп если стояли
     startReelLoop();
 
     const len = people.length;
@@ -371,7 +371,6 @@ export default function HomePage() {
     const loops = 2 + ((Math.random() * 3) | 0); // 2..4
     const distance = loops * len + forward;
 
-    // хотим остановиться ровно на целой позиции (чтобы центр был идеальный)
     const endPos = Math.floor(startPos) + distance;
 
     tweenRef.current = {
@@ -392,16 +391,25 @@ export default function HomePage() {
 
   const url = current ? profileUrl(current.handle) : "#";
 
-  // reel render window (ровная линия, без увеличения)
+  // ---- render window around pos ----
   const len = people.length;
   const pos = posRef.current;
   const base = Math.floor(pos);
   const frac = pos - base;
 
-  // constants
-  const STEP = 96; // расстояние между аватарками
-  const WINDOW = 11; // видимые элементы
+  // size/spacing
+  const WINDOW = 9; // боковых карточек (не слишком много)
   const HALF = Math.floor(WINDOW / 2);
+
+  // базовый шаг (как далеко стоят карточки)
+  const STEP = 98;
+
+  // "дырка" вокруг центра, чтобы НИЧЕГО не залезало под большую карточку
+  // (подобрано под центр 260 и боковые 78 + зазор)
+  const CENTER_HOLE = 190;
+
+  // center avatar src
+  const centerPerson = current ?? null;
 
   return (
     <>
@@ -421,40 +429,41 @@ export default function HomePage() {
           <div className={`stage ${celebrate ? "celebrate" : ""}`} aria-live="polite">
             <div className="congratsText">Congratulations</div>
 
-            {/* SLOT LINE (flat, no scaling) */}
-            <div className={`slotLine ${mode === "spinning" ? "isSpinning" : ""}`} aria-label="slot reel">
-              <div className="slotLineMask" aria-hidden="true"></div>
-              <div className="slotLineTrack" role="presentation">
+            {/* SLOT AREA */}
+            <div className="slotWrap" aria-label="slot reel">
+              {/* moving strip */}
+              <div className="slotStrip">
                 {Array.from({ length: WINDOW }).map((_, i) => {
-                  const offset = i - HALF; // -5..5
+                  const offset = i - HALF; // -4..4
                   const idx = len ? mod(base + offset, len) : 0;
                   const p = people[idx];
 
-                  const x = (offset - frac) * STEP;
+                  let x = (offset - frac) * STEP;
 
-                  // легкий fade по краям — размер НЕ меняем
+                  // ВАЖНО: убираем пересечение — отталкиваем элементы от центра
+                  if (Math.abs(x) < CENTER_HOLE) {
+                    x = (x < 0 ? -1 : 1) * CENTER_HOLE;
+                  }
+
                   const dist = Math.abs(offset - frac);
-                  const opacity = clamp(1 - dist * 0.12, 0.25, 1);
+                  const opacity = clamp(1 - dist * 0.18, 0.25, 1);
 
-                  // кликабельность только когда результат зафиксирован
-                  const isCenter = Math.abs(offset - frac) < 0.55;
-                  const allowClick = mode === "locked" && isCenter && !!current;
+                  // кликабельность только когда результат зафиксирован и центр кликается
+                  const allowClick = false;
 
                   return (
                     <a
                       key={`${idx}-${offset}`}
-                      className={`slotLineItem ${isCenter ? "center" : ""}`}
+                      className="slotSmall"
                       href={allowClick ? url : undefined}
                       target={allowClick ? "_blank" : undefined}
                       rel={allowClick ? "noreferrer" : undefined}
-                      aria-label={p?.handle || "avatar"}
-                      onClick={(e) => {
-                        if (!allowClick) e.preventDefault();
-                      }}
+                      onClick={(e) => e.preventDefault()}
                       style={{
                         transform: `translate3d(${x}px,0,0)`,
                         opacity,
                       }}
+                      aria-label={p?.handle || "avatar"}
                     >
                       <img
                         alt={p?.handle || "avatar"}
@@ -469,11 +478,31 @@ export default function HomePage() {
                 })}
               </div>
 
-              {/* тонкая метка центра */}
-              <div className="slotLineCenterMark" aria-hidden="true"></div>
+              {/* big center card (always visible), no overlap because strip is pushed away */}
+              <a
+                className="slotCenter"
+                href={mode === "locked" && centerPerson ? url : undefined}
+                target={mode === "locked" && centerPerson ? "_blank" : undefined}
+                rel={mode === "locked" && centerPerson ? "noreferrer" : undefined}
+                onClick={(e) => {
+                  if (!(mode === "locked" && centerPerson)) e.preventDefault();
+                }}
+                aria-label="center avatar"
+              >
+                <img
+                  alt={centerPerson?.handle || "avatar"}
+                  src={localAvatarSrc(centerPerson?.handle)}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/avatars/default.png";
+                  }}
+                />
+              </a>
+
+              {/* soft edge mask */}
+              <div className="slotMask" aria-hidden="true"></div>
             </div>
 
-            {/* META: показываем ТОЛЬКО когда есть результат (locked) */}
+            {/* META: только в конце */}
             {mode === "locked" && current && (
               <div className="meta">
                 <a className="handleLink" href={url} target="_blank" rel="noreferrer">
@@ -493,12 +522,8 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* маленькая подсказка когда результата нет */}
-            {mode !== "locked" && (
-              <div className="hint">
-                Tap <b>Based me</b> to roll.
-              </div>
-            )}
+            {/* пока крутится/idle — ничего не показываем кроме ленты */}
+            {mode !== "locked" && <div className="hint"> </div>}
           </div>
 
           <div className="actions">
@@ -638,26 +663,27 @@ export default function HomePage() {
         }
         .stage.celebrate .congratsText{ opacity: 1; }
 
-        /* ===== FLAT SLOT LINE (no scaling) ===== */
-        .slotLine{
-          width: min(900px, 92vw);
-          height: 140px;
+        /* ===== SLOT (previous vibe) ===== */
+        .slotWrap{
+          width: min(860px, 92vw);
+          height: 300px;
           position: relative;
           display:flex;
           align-items:center;
           justify-content:center;
         }
-        .slotLineTrack{
-          position: relative;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
+
+        .slotStrip{
+          position:absolute;
+          inset:0;
           display:flex;
           align-items:center;
           justify-content:center;
+          overflow:hidden;
         }
-        .slotLineItem{
-          position: absolute;
+
+        .slotSmall{
+          position:absolute;
           top: 50%;
           left: 50%;
           width: 78px;
@@ -665,47 +691,53 @@ export default function HomePage() {
           margin-left: -39px;
           margin-top: -39px;
           border-radius: 18px;
-          overflow: hidden;
+          overflow:hidden;
           border: 1px solid rgba(10,10,10,.10);
           background: var(--card);
           box-shadow: 0 10px 24px rgba(0,0,0,.06);
           display:block;
           will-change: transform, opacity;
         }
-        .slotLineItem img{
+        .slotSmall img{
           width:100%;
           height:100%;
           object-fit: cover;
           display:block;
         }
 
-        .slotLineMask{
+        .slotCenter{
+          position: relative;
+          width: 260px;
+          height: 260px;
+          border-radius: 40px;
+          overflow:hidden;
+          border: 1px solid rgba(10,10,10,.12);
+          background: var(--card);
+          box-shadow: 0 22px 58px rgba(0,0,0,.10);
+          z-index: 5;
+          display:block;
+        }
+        .slotCenter img{
+          width:100%;
+          height:100%;
+          object-fit: cover;
+          display:block;
+        }
+
+        .slotMask{
           position:absolute;
           inset:0;
           pointer-events:none;
-          border-radius: 22px;
+          border-radius: 28px;
           background:
             linear-gradient(90deg,
-              rgba(255,255,255,.92),
+              rgba(255,255,255,.90),
               rgba(255,255,255,0) 18%,
               rgba(255,255,255,0) 82%,
-              rgba(255,255,255,.92)
+              rgba(255,255,255,.90)
             );
-          opacity: .7;
-        }
-
-        .slotLineCenterMark{
-          position:absolute;
-          top: 50%;
-          left: 50%;
-          width: 92px;
-          height: 92px;
-          transform: translate(-50%,-50%);
-          border-radius: 22px;
-          pointer-events:none;
-          border: 1px solid rgba(10,10,10,.14);
-          box-shadow: 0 18px 50px rgba(0,0,0,.08);
-          background: rgba(255,255,255,.02);
+          opacity: .62;
+          z-index: 6;
         }
 
         .meta{
@@ -737,11 +769,7 @@ export default function HomePage() {
           font-weight: 950;
           border-bottom:1px solid rgba(10,10,10,.18);
         }
-        .hint{
-          margin-top: 14px;
-          font-size: 13px;
-          color: rgba(10,10,10,.55);
-        }
+        .hint{ height: 1px; }
 
         .actions{
           display:flex;
@@ -781,7 +809,7 @@ export default function HomePage() {
           box-shadow: 0 10px 26px rgba(0,0,0,.06);
         }
 
-        /* creator badge (оставил как у тебя) */
+        /* creator badge (как у тебя) */
         .creatorBadge{
           position: fixed;
           right: 20px;
@@ -839,18 +867,20 @@ export default function HomePage() {
           .stage{ padding:24px 18px 22px; gap:12px; }
           .actions{ padding:16px 18px; }
 
-          .slotLine{ height: 110px; }
-          .slotLineItem{
-            width: 58px;
-            height: 58px;
-            margin-left: -29px;
-            margin-top: -29px;
+          .slotWrap{ height: 220px; }
+
+          .slotSmall{
+            width: 54px;
+            height: 54px;
+            margin-left: -27px;
+            margin-top: -27px;
             border-radius: 14px;
           }
-          .slotLineCenterMark{
-            width: 68px;
-            height: 68px;
-            border-radius: 16px;
+
+          .slotCenter{
+            width: 150px;
+            height: 150px;
+            border-radius: 24px;
           }
 
           .handleLink{ font-size:26px; }
