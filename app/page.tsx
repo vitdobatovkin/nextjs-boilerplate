@@ -115,6 +115,12 @@ function buildSharePageUrl(winner: { handle: string; bio?: string }) {
   return u.toString();
 }
 
+function preload(src: string) {
+  const img = new Image();
+  img.decoding = "async";
+  img.src = src;
+}
+
 function buildXIntentUrl(winner: { handle: string; bio?: string }) {
   const sharePageUrl = buildSharePageUrl(winner);
   const text = `I’m based as ${winner.handle} 😎\nHow based are you in 2026?`;
@@ -148,6 +154,12 @@ function useFullscreenConfetti() {
   const partsRef = useRef<ConfettiParticle[]>([]);
 
   useEffect(() => {
+
+    for (const p of people) preload(localAvatarSrc(p.handle));
+      // и дефолтный
+      preload("/avatars/default.png");
+    }, [people]);
+  
     const canvas = canvasRef.current;
     if (!canvas) return;
 
