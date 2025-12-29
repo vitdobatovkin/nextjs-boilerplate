@@ -1,4 +1,3 @@
-```tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -7,7 +6,7 @@ type Person = { handle: string; image?: string; bio?: string };
 
 const DEFAULT_BIO = "How based are you in 2026?";
 
-// RAW_PARTICIPANTS — оставь как у тебя выше
+// RAW_PARTICIPANTS — вставь сюда свой массив
 const RAW_PARTICIPANTS: Person[] = [
     { handle:"@brian_armstrong", image:"https://pbs.twimg.com/profile_images/1516832438818770944/n77EwnKU_400x400.png", bio:"Co-founder & CEO at Coinbase" },
     { handle:"@emiliemc", image:"https://pbs.twimg.com/profile_images/1623399970287284224/A5DmX2nx_400x400.jpg", bio:"President and COO at Coinbase, Angel Investor" },
@@ -266,8 +265,7 @@ export default function HomePage() {
   const lastWinnerRef = useRef<Person | null>(null);
 
   useEffect(() => {
-    // ⚠️ ВАЖНО: не прелоадить все сразу — это и создавало тонну запросов.
-    // Оставим только default.
+    // ⚠️ не прелоадим все сразу (сотни запросов), только дефолт
     preload("/avatars/default.png");
   }, []);
 
@@ -283,8 +281,6 @@ export default function HomePage() {
     lastWinnerRef.current = null;
 
     const winner = people[Math.floor(Math.random() * people.length)];
-
-    // ✅ прелоадим только того, кто выпадет (и немного тех, кто крутится)
     preload(localAvatarSrc(winner.handle));
 
     for (let i = 0; i < 22; i++) {
@@ -320,7 +316,6 @@ export default function HomePage() {
     <>
       <div className="texture" aria-hidden="true"></div>
 
-      {/* ✅ Confetti canvas */}
       <canvas ref={canvasRef} id="confetti" aria-hidden="true"></canvas>
 
       <div className="wrap">
@@ -404,7 +399,6 @@ export default function HomePage() {
         </section>
       </div>
 
-      {/* styles */}
       <style jsx global>{`
         :root {
           --bg: #ffffff;
@@ -525,8 +519,6 @@ export default function HomePage() {
           object-fit:cover;
           display:block;
         }
-
-        /* ✅ skeleton вместо пустого @… */
         .avatarSkeleton{
           width:100%;
           height:100%;
@@ -538,7 +530,6 @@ export default function HomePage() {
           0% { background-position: 0% 0; }
           100% { background-position: 100% 0; }
         }
-
         .handleLink{
           display:inline-block;
           text-decoration:none;
@@ -613,4 +604,3 @@ export default function HomePage() {
     </>
   );
 }
-```
