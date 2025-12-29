@@ -86,7 +86,7 @@ function sanitize(list: Person[]): Person[] {
 
 function handleToSlug(handle: string) {
   const h = (handle || "").trim().replace(/^@/, "");
-  return h || "default";
+  return (h || "default").toLowerCase();
 }
 
 // ✅ Берём аватары из репозитория: public/avatars/<slug>.png
@@ -155,11 +155,6 @@ function useFullscreenConfetti() {
 
   useEffect(() => {
 
-    for (const p of people) preload(localAvatarSrc(p.handle));
-      // и дефолтный
-      preload("/avatars/default.png");
-    }, [people]);
-  
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -259,6 +254,13 @@ function useFullscreenConfetti() {
 export default function HomePage() {
   const people = useMemo(() => sanitize(RAW_PARTICIPANTS), []);
   const { canvasRef, launch } = useFullscreenConfetti();
+
+  useEffect(() => {
+    // preload всех локальных аватаров один раз
+    for (const p of people) preload(localAvatarSrc(p.handle));
+    preload("/avatars/default.png");
+  }, [people]);
+
 
   const [current, setCurrent] = useState<Person>({
     handle: "@…",
