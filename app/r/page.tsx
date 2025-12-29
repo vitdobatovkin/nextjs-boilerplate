@@ -18,15 +18,17 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   const base =
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://based-me.vercel.app");
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "https://based-me.vercel.app");
 
-  // URL страницы, которую шарят (для мета url)
+  // URL именно этой страницы (важно для X)
   const pageUrl = new URL("/r", base);
   pageUrl.searchParams.set("handle", handle);
   pageUrl.searchParams.set("bio", bio);
   if (v) pageUrl.searchParams.set("v", v);
 
-  // OG image endpoint
+  // OG image
   const ogUrl = new URL("/og", base);
   ogUrl.searchParams.set("handle", handle);
   ogUrl.searchParams.set("bio", bio);
@@ -42,7 +44,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       url: pageUrl.toString(),
       title,
       description: bio,
-      images: [{ url: ogUrl.toString(), width: 1200, height: 630 }],
+      images: [
+        {
+          url: ogUrl.toString(),
+          width: 1200,
+          height: 630,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
@@ -59,12 +67,25 @@ export default function Page({ searchParams }: Props) {
   const bio = (searchParams.bio || "How based are you in 2026?").trim();
 
   return (
-    <main style={{ fontFamily: "system-ui", padding: 32 }}>
-      <h1>Open this link on X to see the card preview</h1>
-      <p>
-        <b>{handle}</b>
-      </p>
-      <p>{bio}</p>
-    </main>
+    <html>
+      <head>
+        {/* ✅ Клиентский редирект — X его игнорирует, браузер выполняет */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (!navigator.userAgent.includes("Twitterbot")) {
+                window.location.replace("/");
+              }
+            `,
+          }}
+        />
+      </head>
+      <body style={{ fontFamily: "system-ui", padding: 32 }}>
+        {/* Минимальный HTML, нужен только для бота */}
+        <h1>I’m based as {handle}</h1>
+        <p>{bio}</p>
+        <p>How based are you in 2026?</p>
+      </body>
+    </html>
   );
 }
