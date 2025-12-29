@@ -218,27 +218,38 @@ export default function HomePage() {
   const [mode, setMode] = useState<Mode>("idle");
   const lastWinnerRef = useRef<Person | null>(null);
 
-  // --- reel animation ---
-  const rafReelRef = useRef<number | null>(null);
-  const lastTRef = useRef<number>(0);
-  const posRef = useRef<number>(0); // float position, continuous
-  const liveIndexRef = useRef<number>(0); // for preloading + final result tracking
+  // ===== Reel parameters (2x) =====
+  const TILE = 340;
+  const GAP = 34;
+  const STEP = TILE + GAP;
 
+  const WINDOW = 7; // big tiles, fewer visible
+  const HALF = Math.floor(WINDOW / 2); // center slot index
+
+  // ===== Continuous phase-based reel (NO micro-stutter) =====
+  // phasePx grows continuously; baseIndex changes only when passing STEP,
+  // but visual stays smooth because content shifts at the edges.
+  const phasePxRef = useRef<number>(0); // in px
+  const rafRef = useRef<number | null>(null);
+  const lastTRef = useRef<number>(0);
+
+  // tween: animate phase by a planned distance, easing out to stop on winner
   const tweenRef = useRef<{
     active: boolean;
-    startPos: number;
-    endPos: number;
+    startPhase: number;
+    endPhase: number;
     t0: number;
     dur: number;
     winnerIndex: number;
   }>({
     active: false,
-    startPos: 0,
-    endPos: 0,
+    startPhase: 0,
+    endPhase: 0,
     t0: 0,
     dur: 0,
     winnerIndex: 0,
-  });
+    active: false,
+  } as any);
 
   const [, forceFrame] = useState(0);
 
@@ -246,43 +257,39 @@ export default function HomePage() {
     preload("/avatars/default.png");
   }, []);
 
+  // init
   useEffect(() => {
     if (!people.length) return;
 
-    const start = (Math.random() * people.length) | 0;
-    posRef.current = start + Math.random(); // fractional start avoids any “snap feel”
-    liveIndexRef.current = mod(Math.floor(posRef.current), people.length);
+    // start somewhere random + random fractional to avoid “locking” feeling
+    const startIndex = (Math.random() * people.length) | 0;
+    const startFrac = Math.random(); // 0..1
+    phasePxRef.current = (startIndex + startFrac) * STEP;
 
+    // preload neighborhood
     for (let d = -18; d <= 18; d++) {
-      const p = people[mod(liveIndexRef.current + d, people.length)];
+      const p = people[mod(startIndex + d, people.length)];
       if (p) preload(localAvatarSrc(p.handle));
     }
 
-    // keep current updated (but UI meta shows only when locked)
-    setCurrent(people[liveIndexRef.current] ?? null);
+    setCurrent(people[startIndex] ?? null);
 
-    startReelLoop();
+    startLoop();
+    return () => stopLoop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people.length]);
 
-  useEffect(() => {
-    return () => {
-      if (rafReelRef.current) cancelAnimationFrame(rafReelRef.current);
-      rafReelRef.current = null;
-    };
-  }, []);
-
-  function stopReelLoop() {
-    if (rafReelRef.current) cancelAnimationFrame(rafReelRef.current);
-    rafReelRef.current = null;
+  function stopLoop() {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
     lastTRef.current = 0;
   }
 
-  function startReelLoop() {
-    if (rafReelRef.current) return;
+  function startLoop() {
+    if (rafRef.current) return;
 
     const tick = (t: number) => {
-      rafReelRef.current = requestAnimationFrame(tick);
+      rafRef.current = requestAnimationFrame(tick);
 
       const len = people.length;
       if (!len) return;
@@ -295,10 +302,10 @@ export default function HomePage() {
         const tw = tweenRef.current;
         const tt = clamp((t - tw.t0) / tw.dur, 0, 1);
         const e = easeOutCubic(tt);
-        posRef.current = tw.startPos + (tw.endPos - tw.startPos) * e;
+        phasePxRef.current = tw.startPhase + (tw.endPhase - tw.startPhase) * e;
 
         if (tt >= 1) {
-          posRef.current = tw.endPos;
+          phasePxRef.current = tw.endPhase;
           tweenRef.current.active = false;
 
           const winner = people[tw.winnerIndex];
@@ -310,29 +317,34 @@ export default function HomePage() {
           setMode("locked");
           launch();
 
-          stopReelLoop(); // stop until next click
+          // stop until next click
+          stopLoop();
           return;
         }
       } else {
         if (mode === "idle") {
-          // continuous movement (no snapping) – just keep rolling
-          posRef.current += dt * 0.55;
+          // smooth constant speed
+          const speedPx = STEP * 0.55; // ~0.55 tiles/sec
+          phasePxRef.current += speedPx * dt;
         }
       }
 
-      // keep pos bounded
-      if (posRef.current > 1e9) posRef.current = mod(posRef.current, len);
+      // keep phase bounded (optional)
+      if (phasePxRef.current > 1e12) phasePxRef.current = phasePxRef.current % (len * STEP);
 
-      // update preload index without “magnet” to center:
-      // use FLOOR (not round) so it won't "stick" around center
-      const idx = mod(Math.floor(posRef.current), len);
-      if (idx !== liveIndexRef.current) {
-        liveIndexRef.current = idx;
-        const p = people[idx];
-        if (p) {
+      // update current only for preloading (no visual snap)
+      // center slot corresponds to baseIndex + HALF
+      const baseIndex = Math.floor(phasePxRef.current / STEP);
+      const centerIndex = mod(baseIndex + HALF, len);
+
+      // keep current “roughly” updated (meta hidden until locked anyway)
+      if (mode !== "locked") {
+        const p = people[centerIndex];
+        if (p && p.handle !== current?.handle) {
           setCurrent(p);
+          // preload around center
           for (let d = -18; d <= 18; d++) {
-            const pp = people[mod(idx + d, len)];
+            const pp = people[mod(centerIndex + d, len)];
             if (pp) preload(localAvatarSrc(pp.handle));
           }
         }
@@ -341,7 +353,7 @@ export default function HomePage() {
       forceFrame((x) => (x + 1) % 1_000_000);
     };
 
-    rafReelRef.current = requestAnimationFrame(tick);
+    rafRef.current = requestAnimationFrame(tick);
   }
 
   async function spin() {
@@ -353,33 +365,37 @@ export default function HomePage() {
     setMode("spinning");
     lastWinnerRef.current = null;
 
-    startReelLoop();
+    startLoop();
 
     const len = people.length;
+
     const winnerIndex = (Math.random() * len) | 0;
     const winner = people[winnerIndex];
     if (winner) preload(localAvatarSrc(winner.handle));
 
-    const startPos = posRef.current;
+    const startPhase = phasePxRef.current;
 
-    // Align the END with exact center position for winner – only at the end.
-    // During spinning: no snapping. End: smooth ease to winner.
-    const startIndex = mod(Math.floor(startPos), len);
-    const forward = mod(winnerIndex - startIndex, len);
+    // current base and fractional position
+    const startBase = Math.floor(startPhase / STEP);
+    const frac = (startPhase - startBase * STEP) / STEP; // 0..1
 
+    // center currently corresponds to startBase + HALF
+    const currentCenterIndex = mod(startBase + HALF, len);
+
+    // how many steps forward to land winner in center
+    const forward = mod(winnerIndex - currentCenterIndex, len);
     const loops = 2 + ((Math.random() * 3) | 0); // 2..4
-    const distance = loops * len + forward;
+    const steps = loops * len + forward;
 
-    // keep fractional component so motion feels continuous
-    const frac = startPos - Math.floor(startPos);
-    const endPos = Math.floor(startPos) + distance + frac;
+    // endPhase should advance by steps * STEP (keeping same frac so motion feels continuous)
+    const endPhase = startPhase + steps * STEP;
 
     tweenRef.current = {
       active: true,
-      startPos,
-      endPos,
+      startPhase,
+      endPhase,
       t0: performance.now(),
-      dur: 1900 + loops * 420,
+      dur: 2100 + loops * 520,
       winnerIndex,
     };
   }
@@ -392,22 +408,13 @@ export default function HomePage() {
 
   const url = current ? profileUrl(current.handle) : "#";
 
-  // ---- render window around pos ----
+  // ----- derive strip layout from phase -----
   const len = people.length;
-  const pos = posRef.current;
-  const base = Math.floor(pos);
-  const frac = pos - base;
+  const phase = phasePxRef.current;
 
-  // 2x bigger tiles than previous big-reel version
-  const TILE = 340; // was 170
-  const GAP = 34;   // was 18
-  const STEP = TILE + GAP;
-
-  const WINDOW = 7; // fewer visible due to size
-  const HALF = Math.floor(WINDOW / 2);
-
-  // winner pop only after locked
-  const winnerPop = mode === "locked";
+  const baseIndex = Math.floor(phase / STEP);
+  const fracPx = phase - baseIndex * STEP; // 0..STEP
+  const offset = -fracPx; // moves tiles left continuously
 
   return (
     <>
@@ -427,30 +434,28 @@ export default function HomePage() {
           <div className={`stage ${celebrate ? "celebrate" : ""}`} aria-live="polite">
             <div className="congratsText">Congratulations</div>
 
-            {/* BIG TILE REEL (no center frame/outline) */}
+            {/* BIG REEL (2x) — no center outline, no snap */}
             <div className="bigReel" aria-label="reel">
               <div className="bigReelTrack" role="presentation">
                 {Array.from({ length: WINDOW }).map((_, i) => {
-                  const offset = i - HALF; // -3..3
-                  const idx = len ? mod(base + offset, len) : 0;
+                  // slot i is stable (key=i), content changes seamlessly
+                  const virtualIndex = baseIndex + (i - HALF);
+                  const idx = len ? mod(virtualIndex, len) : 0;
                   const p = people[idx];
 
-                  const x = (offset - frac) * STEP;
+                  const x = (i - HALF) * STEP + offset;
 
-                  // soft fade to edges, no resizing while spinning
-                  const dist = Math.abs(offset - frac);
-                  const opacity = clamp(1 - dist * 0.15, 0.18, 1);
+                  const dist = Math.abs(x) / STEP;
+                  const opacity = clamp(1 - dist * 0.14, 0.18, 1);
 
-                  const isCenter = Math.abs(offset - frac) < 0.55;
-
+                  const isCenter = i === HALF;
                   const allowClick = mode === "locked" && isCenter && !!current;
-
-                  const popScale = allowClick && winnerPop ? 1.06 : 1;
-                  const popY = allowClick && winnerPop ? -10 : 0;
+                  const popScale = allowClick ? 1.06 : 1;
+                  const popY = allowClick ? -10 : 0;
 
                   return (
                     <a
-                      key={`${idx}-${offset}`}
+                      key={i}
                       className={`bigTile ${allowClick ? "winner" : ""}`}
                       href={allowClick ? url : undefined}
                       target={allowClick ? "_blank" : undefined}
@@ -478,19 +483,17 @@ export default function HomePage() {
                 })}
               </div>
 
-              {/* only side fade mask (no center outline) */}
+              {/* only side fade mask */}
               <div className="bigReelMask" aria-hidden="true"></div>
             </div>
 
-            {/* META only at end */}
+            {/* META only after locked */}
             {mode === "locked" && current && (
               <div className="meta">
                 <a className="handleLink" href={url} target="_blank" rel="noreferrer">
                   {current.handle}
                 </a>
-
                 <div className="bio">{current.bio || ""}</div>
-
                 {celebrate && (
                   <div className="basedLine">
                     You are based as{" "}
@@ -523,7 +526,7 @@ export default function HomePage() {
         </section>
       </div>
 
-      {/* creator badge bottom-right */}
+      {/* creator badge */}
       <div className="creatorBadge">
         <a href="https://x.com/0x_mura" target="_blank" rel="noreferrer" className="creatorRow">
           <img
@@ -660,6 +663,7 @@ export default function HomePage() {
           align-items:center;
           justify-content:center;
         }
+
         .bigTile{
           position: absolute;
           top: 50%;
@@ -677,7 +681,8 @@ export default function HomePage() {
 
           display:block;
           will-change: transform, opacity;
-          transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+          /* IMPORTANT: no big “snap” transitions while moving */
+          transition: box-shadow .22s ease, border-color .22s ease;
         }
         .bigTile img{
           width:100%;
@@ -830,7 +835,7 @@ export default function HomePage() {
           .stage{ padding:24px 18px 22px; gap:12px; }
           .actions{ padding:16px 18px; }
 
-          .bigReel{ height: 250px; }
+          .bigReel{ height: 260px; }
 
           .bigTile{
             width: 200px;
