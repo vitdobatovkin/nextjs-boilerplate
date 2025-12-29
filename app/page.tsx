@@ -6,8 +6,7 @@ type Person = { handle: string; image?: string; bio?: string };
 
 const DEFAULT_BIO = "How based are you in 2026?";
 
-// RAW_PARTICIPANTS — оставь как у тебя (массив Person[])
-declare const RAW_PARTICIPANTS: Person[] = [
+const RAW_PARTICIPANTS: Person[] = [
     { handle:"@brian_armstrong", image:"https://pbs.twimg.com/profile_images/1516832438818770944/n77EwnKU_400x400.png", bio:"Co-founder & CEO at Coinbase" },
     { handle:"@emiliemc", image:"https://pbs.twimg.com/profile_images/1623399970287284224/A5DmX2nx_400x400.jpg", bio:"President and COO at Coinbase, Angel Investor" },
     { handle:"@catferdon", image:"https://pbs.twimg.com/profile_images/570956786867396608/Ksld22NC_400x400.jpeg", bio:"cmo coinbase" },
