@@ -221,8 +221,8 @@ export default function HomePage() {
   // --- reel animation ---
   const rafReelRef = useRef<number | null>(null);
   const lastTRef = useRef<number>(0);
-  const posRef = useRef<number>(0); // float
-  const liveIndexRef = useRef<number>(0);
+  const posRef = useRef<number>(0); // float position, continuous
+  const liveIndexRef = useRef<number>(0); // for preloading + final result tracking
 
   const tweenRef = useRef<{
     active: boolean;
@@ -250,15 +250,17 @@ export default function HomePage() {
     if (!people.length) return;
 
     const start = (Math.random() * people.length) | 0;
-    posRef.current = start;
-    liveIndexRef.current = mod(Math.round(posRef.current), people.length);
+    posRef.current = start + Math.random(); // fractional start avoids any “snap feel”
+    liveIndexRef.current = mod(Math.floor(posRef.current), people.length);
 
-    for (let d = -14; d <= 14; d++) {
-      const p = people[mod(start + d, people.length)];
+    for (let d = -18; d <= 18; d++) {
+      const p = people[mod(liveIndexRef.current + d, people.length)];
       if (p) preload(localAvatarSrc(p.handle));
     }
 
+    // keep current updated (but UI meta shows only when locked)
     setCurrent(people[liveIndexRef.current] ?? null);
+
     startReelLoop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people.length]);
@@ -308,24 +310,28 @@ export default function HomePage() {
           setMode("locked");
           launch();
 
-          stopReelLoop(); // стоим до следующего клика
+          stopReelLoop(); // stop until next click
           return;
         }
       } else {
         if (mode === "idle") {
-          posRef.current += dt * 0.55; // мягкий idle
+          // continuous movement (no snapping) – just keep rolling
+          posRef.current += dt * 0.55;
         }
       }
 
+      // keep pos bounded
       if (posRef.current > 1e9) posRef.current = mod(posRef.current, len);
 
-      const idx = mod(Math.round(posRef.current), len);
+      // update preload index without “magnet” to center:
+      // use FLOOR (not round) so it won't "stick" around center
+      const idx = mod(Math.floor(posRef.current), len);
       if (idx !== liveIndexRef.current) {
         liveIndexRef.current = idx;
         const p = people[idx];
         if (p) {
           setCurrent(p);
-          for (let d = -14; d <= 14; d++) {
+          for (let d = -18; d <= 18; d++) {
             const pp = people[mod(idx + d, len)];
             if (pp) preload(localAvatarSrc(pp.handle));
           }
@@ -355,13 +361,18 @@ export default function HomePage() {
     if (winner) preload(localAvatarSrc(winner.handle));
 
     const startPos = posRef.current;
-    const startIndex = mod(Math.round(startPos), len);
+
+    // Align the END with exact center position for winner – only at the end.
+    // During spinning: no snapping. End: smooth ease to winner.
+    const startIndex = mod(Math.floor(startPos), len);
     const forward = mod(winnerIndex - startIndex, len);
 
     const loops = 2 + ((Math.random() * 3) | 0); // 2..4
     const distance = loops * len + forward;
 
-    const endPos = Math.floor(startPos) + distance;
+    // keep fractional component so motion feels continuous
+    const frac = startPos - Math.floor(startPos);
+    const endPos = Math.floor(startPos) + distance + frac;
 
     tweenRef.current = {
       active: true,
@@ -387,15 +398,15 @@ export default function HomePage() {
   const base = Math.floor(pos);
   const frac = pos - base;
 
-  // UI params: all tiles same big size
-  const TILE = 170;
-  const GAP = 18;
+  // 2x bigger tiles than previous big-reel version
+  const TILE = 340; // was 170
+  const GAP = 34;   // was 18
   const STEP = TILE + GAP;
 
-  const WINDOW = 9;
+  const WINDOW = 7; // fewer visible due to size
   const HALF = Math.floor(WINDOW / 2);
 
-  // when locked: push winner forward + slightly bigger
+  // winner pop only after locked
   const winnerPop = mode === "locked";
 
   return (
@@ -416,29 +427,26 @@ export default function HomePage() {
           <div className={`stage ${celebrate ? "celebrate" : ""}`} aria-live="polite">
             <div className="congratsText">Congratulations</div>
 
-            {/* BIG TILE REEL (same size) */}
+            {/* BIG TILE REEL (no center frame/outline) */}
             <div className="bigReel" aria-label="reel">
               <div className="bigReelTrack" role="presentation">
                 {Array.from({ length: WINDOW }).map((_, i) => {
-                  const offset = i - HALF; // -4..4
+                  const offset = i - HALF; // -3..3
                   const idx = len ? mod(base + offset, len) : 0;
                   const p = people[idx];
 
                   const x = (offset - frac) * STEP;
 
-                  // soft fade to edges (no resizing while spinning)
+                  // soft fade to edges, no resizing while spinning
                   const dist = Math.abs(offset - frac);
-                  const opacity = clamp(1 - dist * 0.14, 0.22, 1);
+                  const opacity = clamp(1 - dist * 0.15, 0.18, 1);
 
-                  // center detection
                   const isCenter = Math.abs(offset - frac) < 0.55;
 
-                  // only center is clickable when locked
                   const allowClick = mode === "locked" && isCenter && !!current;
 
-                  // pop only when locked and it is center
-                  const popScale = allowClick && winnerPop ? 1.08 : 1;
-                  const popY = allowClick && winnerPop ? -8 : 0;
+                  const popScale = allowClick && winnerPop ? 1.06 : 1;
+                  const popY = allowClick && winnerPop ? -10 : 0;
 
                   return (
                     <a
@@ -470,11 +478,8 @@ export default function HomePage() {
                 })}
               </div>
 
-              {/* subtle side fade */}
+              {/* only side fade mask (no center outline) */}
               <div className="bigReelMask" aria-hidden="true"></div>
-
-              {/* center frame hint */}
-              <div className={`bigReelCenter ${mode === "locked" ? "locked" : ""}`} aria-hidden="true"></div>
             </div>
 
             {/* META only at end */}
@@ -637,10 +642,10 @@ export default function HomePage() {
         }
         .stage.celebrate .congratsText{ opacity: 1; }
 
-        /* ===== BIG REEL ===== */
+        /* ===== BIG REEL (2x) ===== */
         .bigReel{
-          width: min(980px, 92vw);
-          height: 220px;
+          width: min(1180px, 96vw);
+          height: 420px;
           position: relative;
           display:flex;
           align-items:center;
@@ -659,20 +664,20 @@ export default function HomePage() {
           position: absolute;
           top: 50%;
           left: 50%;
-          width: 170px;
-          height: 170px;
-          margin-left: -85px;
-          margin-top: -85px;
+          width: 340px;
+          height: 340px;
+          margin-left: -170px;
+          margin-top: -170px;
 
-          border-radius: 34px;
+          border-radius: 62px;
           overflow:hidden;
           border: 1px solid rgba(10,10,10,.10);
           background: var(--card);
-          box-shadow: 0 16px 44px rgba(0,0,0,.08);
+          box-shadow: 0 20px 60px rgba(0,0,0,.08);
 
           display:block;
           will-change: transform, opacity;
-          transition: transform .22s ease, box-shadow .22s ease;
+          transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
         }
         .bigTile img{
           width:100%;
@@ -680,9 +685,8 @@ export default function HomePage() {
           object-fit: cover;
           display:block;
         }
-
         .bigTile.winner{
-          box-shadow: 0 26px 70px rgba(0,0,0,.14);
+          box-shadow: 0 34px 96px rgba(0,0,0,.14);
           border-color: rgba(10,10,10,.14);
         }
 
@@ -693,36 +697,15 @@ export default function HomePage() {
           border-radius: 28px;
           background:
             linear-gradient(90deg,
-              rgba(255,255,255,.92),
-              rgba(255,255,255,0) 20%,
-              rgba(255,255,255,0) 80%,
-              rgba(255,255,255,.92)
+              rgba(255,255,255,.94),
+              rgba(255,255,255,0) 22%,
+              rgba(255,255,255,0) 78%,
+              rgba(255,255,255,.94)
             );
-          opacity: .62;
+          opacity: .68;
         }
 
-        .bigReelCenter{
-          position:absolute;
-          top: 50%;
-          left: 50%;
-          width: 186px;
-          height: 186px;
-          transform: translate(-50%,-50%);
-          border-radius: 38px;
-          pointer-events:none;
-          border: 1px solid rgba(10,10,10,.10);
-          background: rgba(255,255,255,.02);
-          box-shadow: 0 22px 62px rgba(0,0,0,.06);
-          opacity: .55;
-        }
-        .bigReelCenter.locked{
-          opacity: .85;
-          border-color: rgba(10,10,10,.14);
-        }
-
-        .meta{
-          margin-top: 10px;
-        }
+        .meta{ margin-top: 10px; }
         .handleLink{
           display:inline-block;
           text-decoration:none;
@@ -847,19 +830,14 @@ export default function HomePage() {
           .stage{ padding:24px 18px 22px; gap:12px; }
           .actions{ padding:16px 18px; }
 
-          .bigReel{ height: 160px; }
+          .bigReel{ height: 250px; }
 
           .bigTile{
-            width: 118px;
-            height: 118px;
-            margin-left: -59px;
-            margin-top: -59px;
-            border-radius: 26px;
-          }
-          .bigReelCenter{
-            width: 128px;
-            height: 128px;
-            border-radius: 28px;
+            width: 200px;
+            height: 200px;
+            margin-left: -100px;
+            margin-top: -100px;
+            border-radius: 40px;
           }
 
           .handleLink{ font-size:26px; }
