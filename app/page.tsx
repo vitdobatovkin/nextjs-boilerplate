@@ -69,6 +69,10 @@ function buildXIntentUrl(winner: { handle: string; bio?: string }) {
   return intent.toString();
 }
 
+function mod(n: number, m: number) {
+  return ((n % m) + m) % m;
+}
+
 // ===== CONFETTI (fullscreen) =====
 type ConfettiParticle = {
   x: number;
@@ -201,11 +205,33 @@ export default function HomePage() {
   const [current, setCurrent] = useState<Person | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [spinning, setSpinning] = useState(false);
+  const [cursor, setCursor] = useState(0);
   const lastWinnerRef = useRef<Person | null>(null);
 
   useEffect(() => {
     preload("/avatars/default.png");
   }, []);
+
+  useEffect(() => {
+    if (!people.length) return;
+    setCursor(((Math.random() * people.length) | 0) ?? 0);
+    // preload a few around start
+    for (let i = 0; i < Math.min(10, people.length); i++) {
+      preload(localAvatarSrc(people[i].handle));
+    }
+  }, [people.length]);
+
+  // idle reel
+  useEffect(() => {
+    if (!people.length) return;
+    if (spinning) return;
+
+    const id = window.setInterval(() => {
+      setCursor((c) => (c + 1) % people.length);
+    }, 900);
+
+    return () => window.clearInterval(id);
+  }, [people.length, spinning]);
 
   async function sleep(ms: number) {
     return new Promise((r) => setTimeout(r, ms));
@@ -218,24 +244,32 @@ export default function HomePage() {
     setCelebrate(false);
     lastWinnerRef.current = null;
 
-    const winner = people[Math.floor(Math.random() * people.length)];
+    const winnerIndex = Math.floor(Math.random() * people.length);
+    const winner = people[winnerIndex];
     preload(localAvatarSrc(winner.handle));
 
+    // fast phase
     for (let i = 0; i < 22; i++) {
-      const p = people[Math.floor(Math.random() * people.length)];
+      const idx = Math.floor(Math.random() * people.length);
+      const p = people[idx];
       preload(localAvatarSrc(p.handle));
       setCurrent(p);
+      setCursor(idx);
       await sleep(45);
     }
 
+    // slow phase
     for (let i = 0; i < 12; i++) {
-      const p = people[Math.floor(Math.random() * people.length)];
+      const idx = Math.floor(Math.random() * people.length);
+      const p = people[idx];
       preload(localAvatarSrc(p.handle));
       setCurrent(p);
+      setCursor(idx);
       await sleep(85 + i * 18);
     }
 
     setCurrent(winner);
+    setCursor(winnerIndex);
     lastWinnerRef.current = winner;
     setCelebrate(true);
     launch();
@@ -268,24 +302,41 @@ export default function HomePage() {
           <div className={`stage ${celebrate ? "celebrate" : ""}`} aria-live="polite">
             <div className="congratsText">Congratulations</div>
 
-            <a
-              className="avatarLink"
-              href={current ? url : undefined}
-              target={current ? "_blank" : undefined}
-              rel={current ? "noreferrer" : undefined}
-              aria-label="avatar"
-              onClick={(e) => {
-                if (!current) e.preventDefault();
-              }}
-            >
-              <img
-                alt={current ? current.handle : "default avatar"}
-                src={localAvatarSrc(current?.handle)}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = "/avatars/default.png";
-                }}
-              />
-            </a>
+            {/* REEL */}
+            <div className={`reel ${spinning ? "isSpinning" : ""}`} aria-label="avatar reel">
+              <div className="reelTrack">
+                {[-3, -2, -1, 0, 1, 2, 3].map((d) => {
+                  const idx = people.length ? mod(cursor + d, people.length) : 0;
+                  const p = people[idx];
+
+                  const isCenter = d === 0 && !!current;
+                  const href = isCenter && current ? url : undefined;
+
+                  return (
+                    <a
+                      key={`${idx}-${d}`}
+                      className={`reelItem ${d === 0 ? "center" : ""}`}
+                      href={href}
+                      target={href ? "_blank" : undefined}
+                      rel={href ? "noreferrer" : undefined}
+                      aria-label={p?.handle || "avatar"}
+                      onClick={(e) => {
+                        if (!href) e.preventDefault();
+                      }}
+                    >
+                      <img
+                        alt={p?.handle || "avatar"}
+                        src={localAvatarSrc(p?.handle)}
+                        loading="eager"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "/avatars/default.png";
+                        }}
+                      />
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
 
             <div className="meta">
               {current ? (
@@ -332,7 +383,7 @@ export default function HomePage() {
         </section>
       </div>
 
-            {/* creator badge bottom-right */}
+      {/* creator badge bottom-right */}
       <div className="creatorBadge">
         <a
           href="https://x.com/0x_mura"
@@ -359,8 +410,6 @@ export default function HomePage() {
           Join Base App
         </a>
       </div>
-
-
 
       <style jsx global>{`
         :root {
@@ -462,26 +511,56 @@ export default function HomePage() {
           transition: opacity .18s ease;
         }
         .stage.celebrate .congratsText{ opacity: 1; }
-        .avatarLink{
-          display:block;
-          border-radius: 40px;
+
+        /* ===== REEL styles ===== */
+        .reel{
+          width: min(560px, 92vw);
+          height: 280px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          position: relative;
+        }
+        .reelTrack{
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap: 12px;
+          width: 100%;
+          overflow: hidden;
+          padding: 8px 10px;
+        }
+        .reelItem{
+          width: 74px;
+          height: 74px;
+          border-radius: 18px;
           overflow:hidden;
           border:1px solid rgba(10,10,10,.10);
-          width: 260px;
-          height: 260px;
           background: var(--card);
-          transition: transform .12s ease, box-shadow .12s ease;
+          display:block;
+          flex: 0 0 auto;
+          opacity: .62;
+          transform: scale(.86);
+          transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease;
         }
-        .avatarLink:hover{
-          transform: translateY(-1px);
-          box-shadow: 0 18px 44px rgba(0,0,0,.10);
-        }
-        .avatarLink img{
+        .reelItem img{
           width:100%;
           height:100%;
           object-fit:cover;
           display:block;
         }
+        .reelItem.center{
+          width: 260px;
+          height: 260px;
+          border-radius: 40px;
+          opacity: 1;
+          transform: scale(1);
+          box-shadow: 0 18px 44px rgba(0,0,0,.10);
+        }
+        .reel.isSpinning .reelItem{
+          transition-duration: .06s;
+        }
+
         .handleLink{
           display:inline-block;
           text-decoration:none;
@@ -545,77 +624,78 @@ export default function HomePage() {
           border:1px solid rgba(10,10,10,.14);
           box-shadow: 0 10px 26px rgba(0,0,0,.06);
         }
-                    .creatorBadge{
-  position: fixed;
-  right: 20px;
-  bottom: 18px;
-  z-index: 40;
 
-  display: flex;
-  align-items: center;
-  gap: 10px;
+        /* creator badge (kept as-is from your last version) */
+        .creatorBadge{
+          position: fixed;
+          right: 20px;
+          bottom: 18px;
+          z-index: 40;
 
-  font-size: 13px;
-  line-height: 1;
-}
+          display: flex;
+          align-items: center;
+          gap: 10px;
 
-.creatorRow{
-  display: flex;
-  align-items: center;
-  gap: 8px;
+          font-size: 13px;
+          line-height: 1;
+        }
+        .creatorRow{
+          display: flex;
+          align-items: center;
+          gap: 8px;
 
-  text-decoration: none;
-  color: rgba(10,10,10,.55);
-}
+          text-decoration: none;
+          color: rgba(10,10,10,.55);
+        }
+        .creatorRow:hover{
+          color: rgba(10,10,10,.85);
+        }
+        .creatorAvatar{
+          width: 22px;
+          height: 22px;
+          border-radius: 999px;
+          object-fit: cover;
+        }
+        .creatorRow b{
+          font-weight: 800;
+          color: rgba(10,10,10,.75);
+        }
+        .baseJoin{
+          position: relative;
+          padding-left: 14px;
 
-.creatorRow:hover{
-  color: rgba(10,10,10,.85);
-}
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 600;
+          color: rgba(10,10,10,.45);
+        }
+        .baseJoin::before{
+          content: "·";
+          position: absolute;
+          left: 4px;
+          color: rgba(10,10,10,.35);
+        }
+        .baseJoin:hover{
+          color: rgba(10,10,10,.8);
+        }
 
-.creatorAvatar{
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  object-fit: cover;
-}
+        @media (max-width: 560px){
+          .stage{ padding:24px 18px 22px; gap:12px; }
+          .handleLink{ font-size:26px; }
+          .bio{ font-size:14px; }
+          .actions{ padding:16px 18px; }
 
-.creatorRow b{
-  font-weight: 800;
-  color: rgba(10,10,10,.75);
-}
+          .reel{ height: 210px; }
+          .reelItem{ width: 52px; height: 52px; border-radius: 14px; }
+          .reelItem.center{ width: 140px; height: 140px; border-radius: 24px; }
 
-/* тонкий разделитель */
-.baseJoin{
-  position: relative;
-  padding-left: 14px;
-
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(10,10,10,.45);
-}
-
-.baseJoin::before{
-  content: "·";
-  position: absolute;
-  left: 4px;
-  color: rgba(10,10,10,.35);
-}
-
-.baseJoin:hover{
-  color: rgba(10,10,10,.8);
-}
-
-@media (max-width: 560px){
-  .creatorBadge{
-    right: 14px;
-    bottom: 12px;
-    font-size: 12px;
-  }
-}
-
-
-      `}</style>  
+          .creatorBadge{
+            right: 14px;
+            bottom: 12px;
+            font-size: 12px;
+          }
+        }
+      `}</style>
     </>
   );
 }
