@@ -332,6 +332,30 @@ export default function HomePage() {
         </section>
       </div>
 
+            {/* socials bottom-right */}
+      <div className="socials">
+        <div className="socialsTitle">Socials</div>
+
+        <a
+          className="socialsLink"
+          href="https://x.com/0x_mura"
+          target="_blank"
+          rel="noreferrer"
+        >
+          X
+        </a>
+
+        <a
+          className="socialsLink"
+          href="https://base.app/invite/muraa/HCR6DPRH"
+          target="_blank"
+          rel="noreferrer"
+        >
+          BASE&nbsp;&nbsp;APP
+        </a>
+      </div>
+
+
       <style jsx global>{`
         :root {
           --bg: #ffffff;
@@ -514,6 +538,32 @@ export default function HomePage() {
           color: var(--text);
           border:1px solid rgba(10,10,10,.14);
           box-shadow: 0 10px 26px rgba(0,0,0,.06);
+        }
+                .socials{
+          position: fixed;
+          right: 22px;
+          bottom: 18px;
+          z-index: 30;
+          text-align: right;
+          user-select: none;
+        }
+        .socialsTitle{
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 8px;
+          color: rgba(10,10,10,.9);
+        }
+        .socialsLink{
+          display:block;
+          font-size: 14px;
+          letter-spacing: .08em;
+          text-transform: uppercase;
+          color: rgba(10,10,10,.55);
+          text-decoration: none;
+          padding: 6px 0;
+        }
+        .socialsLink:hover{
+          color: rgba(10,10,10,.9);
         }
         @media (max-width: 560px){
           .stage{ padding:24px 18px 22px; gap:12px; }
