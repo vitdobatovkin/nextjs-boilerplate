@@ -20,11 +20,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://based-me.vercel.app");
 
+  // URL страницы, которую шарят (для мета url)
   const pageUrl = new URL("/r", base);
   pageUrl.searchParams.set("handle", handle);
   pageUrl.searchParams.set("bio", bio);
   if (v) pageUrl.searchParams.set("v", v);
 
+  // OG image endpoint
   const ogUrl = new URL("/og", base);
   ogUrl.searchParams.set("handle", handle);
   ogUrl.searchParams.set("bio", bio);
