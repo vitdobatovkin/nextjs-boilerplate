@@ -546,55 +546,94 @@ export default function HomePage() {
           box-shadow: 0 10px 26px rgba(0,0,0,.06);
         }
                         .creatorBadge{
-          position: fixed;
-          right: 20px;
-          bottom: 18px;
-          z-index: 40;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          font-size: 13px;
-        }
+  position: fixed;
+  right: 20px;
+  bottom: 18px;
+  z-index: 40;
 
-        .creatorRow{
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          text-decoration: none;
-          color: rgba(10,10,10,.8);
-        }
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 
-        .creatorRow:hover{
-          color: rgba(10,10,10,1);
-        }
+  padding: 12px 14px;
+  border-radius: 16px;
 
-        .creatorAvatar{
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 1px solid rgba(0,0,0,.12);
-        }
+  background: rgba(255,255,255,.78);
+  border: 1px solid rgba(10,10,10,.10);
+  box-shadow: 0 18px 55px rgba(0,0,0,.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
 
-        .baseJoin{
-          font-size: 13px;
-          font-weight: 600;
-          text-decoration: none;
-          color: rgba(10,10,10,.6);
-        }
+.creatorRow{
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  column-gap: 10px;
 
-        .baseJoin:hover{
-          color: rgba(10,10,10,1);
-        }
+  text-decoration: none;
+  color: rgba(10,10,10,.78);
+  font-size: 13px;
+  line-height: 1.15;
+}
 
-        @media (max-width: 560px){
-          .stage{ padding:24px 18px 22px; gap:12px; }
-          .avatarLink{ width:140px; height:140px; border-radius:24px; }
-          .handleLink{ font-size:26px; }
-          .bio{ font-size:14px; }
-          .actions{ padding:16px 18px; }
-        }
-      `}</style>
+.creatorRow:hover{
+  color: rgba(10,10,10,.95);
+}
+
+.creatorRow span{
+  white-space: nowrap;      /* чтобы не ломало строку */
+}
+
+.creatorRow b{
+  font-weight: 900;
+}
+
+.creatorAvatar{
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid rgba(0,0,0,.10);
+}
+
+.baseJoin{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  color: rgba(10,10,10,.68);
+  background: rgba(0,0,0,.035);
+  border: 1px solid rgba(10,10,10,.10);
+}
+
+.baseJoin:hover{
+  color: rgba(10,10,10,.92);
+  background: rgba(0,0,0,.055);
+}
+
+@media (max-width: 560px){
+  .creatorBadge{
+    right: 12px;
+    bottom: 12px;
+    padding: 10px 12px;
+  }
+  .creatorRow span{
+    max-width: 170px;        /* чтобы на мобиле не вылезало */
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+      `}</style>  
     </>
   );
 }
