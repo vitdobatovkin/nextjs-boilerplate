@@ -545,7 +545,7 @@ export default function HomePage() {
           border:1px solid rgba(10,10,10,.14);
           box-shadow: 0 10px 26px rgba(0,0,0,.06);
         }
-                        .creatorBadge{
+                       .creatorBadge{
   position: fixed;
   right: 20px;
   bottom: 18px;
@@ -553,83 +553,53 @@ export default function HomePage() {
 
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 
-  padding: 12px 14px;
-  border-radius: 16px;
-
-  background: rgba(255,255,255,.78);
-  border: 1px solid rgba(10,10,10,.10);
-  box-shadow: 0 18px 55px rgba(0,0,0,.12);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  font-size: 13px;
 }
 
 .creatorRow{
-  display: grid;
-  grid-template-columns: 28px 1fr;
+  display: flex;
   align-items: center;
-  column-gap: 10px;
+  gap: 8px;
 
   text-decoration: none;
-  color: rgba(10,10,10,.78);
-  font-size: 13px;
-  line-height: 1.15;
+  color: rgba(10,10,10,.60);
+  line-height: 1.2;
 }
 
 .creatorRow:hover{
-  color: rgba(10,10,10,.95);
-}
-
-.creatorRow span{
-  white-space: nowrap;      /* чтобы не ломало строку */
-}
-
-.creatorRow b{
-  font-weight: 900;
+  color: rgba(10,10,10,.9);
 }
 
 .creatorAvatar{
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
   object-fit: cover;
-  border: 1px solid rgba(0,0,0,.10);
+}
+
+.creatorRow b{
+  font-weight: 800;
+  color: rgba(10,10,10,.75);
 }
 
 .baseJoin{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
   text-decoration: none;
   font-size: 13px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-
-  padding: 10px 12px;
-  border-radius: 12px;
-
-  color: rgba(10,10,10,.68);
-  background: rgba(0,0,0,.035);
-  border: 1px solid rgba(10,10,10,.10);
+  font-weight: 600;
+  color: rgba(10,10,10,.45);
+  padding-left: 30px; /* выравнивание под текст, не под аватар */
 }
 
 .baseJoin:hover{
-  color: rgba(10,10,10,.92);
-  background: rgba(0,0,0,.055);
+  color: rgba(10,10,10,.8);
 }
 
 @media (max-width: 560px){
   .creatorBadge{
-    right: 12px;
+    right: 14px;
     bottom: 12px;
-    padding: 10px 12px;
-  }
-  .creatorRow span{
-    max-width: 170px;        /* чтобы на мобиле не вылезало */
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 }
 
