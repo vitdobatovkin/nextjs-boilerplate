@@ -2,16 +2,12 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-type Person = {
-  handle: string;
-  image?: string;
-  bio?: string;
-};
+type Person = { handle: string; image?: string; bio?: string };
 
 const DEFAULT_BIO = "How based are you in 2026?";
 
 // ============================
-// RAW PARTICIPANTS
+// PARTICIPANTS
 // ============================
 const RAW_PARTICIPANTS: Person[] = [
    { handle:"@brian_armstrong", image:"https://pbs.twimg.com/profile_images/1516832438818770944/n77EwnKU_400x400.png", bio:"Co-founder & CEO at Coinbase" },
@@ -73,22 +69,18 @@ const RAW_PARTICIPANTS: Person[] = [
 function sanitize(list: Person[]): Person[] {
   const out: Person[] = [];
   const seen = new Set<string>();
-
   for (const p of list) {
     const handle = (p?.handle || "").trim();
     if (!handle.startsWith("@")) continue;
-
     const key = handle.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-
     out.push({
       handle,
       image: (p.image || "").trim(),
       bio: (p.bio || "").trim(),
     });
   }
-
   return out;
 }
 
@@ -97,38 +89,32 @@ function profileUrl(handle: string) {
 }
 
 /**
- * 🔴 КРИТИЧЕСКИ ВАЖНО
- * Всегда шарим /r, НЕ /
+ * ❗️ВАЖНО
+ * Всегда шарим /r (OG берётся оттуда)
  */
 function buildSharePageUrl(winner: { handle: string; bio?: string }) {
-  const base = window.location.origin; // https://based-me.vercel.app
-  const u = new URL("/r", base); // ✅ ТОЛЬКО /r
+  const base = window.location.origin;
+  const u = new URL("/r", base); // ✅ НЕ "/"
 
   u.searchParams.set("handle", winner.handle);
   u.searchParams.set("bio", winner.bio || DEFAULT_BIO);
-
-  // cache-bust для X
-  u.searchParams.set("v", String(Date.now()));
+  u.searchParams.set("v", String(Date.now())); // cache-bust для X
 
   return u.toString();
 }
 
 function buildXIntentUrl(winner: { handle: string; bio?: string }) {
   const sharePageUrl = buildSharePageUrl(winner);
-
   const text = `I’m based as ${winner.handle} 😎
 How based are you in 2026?`;
 
   const intent = new URL("https://x.com/intent/post");
   intent.searchParams.set("text", text);
   intent.searchParams.set("url", sharePageUrl);
-
   return intent.toString();
 }
 
-// ============================
-// CONFETTI (оставлено как было)
-// ============================
+// ===== CONFETTI =====
 type ConfettiParticle = {
   x: number;
   y: number;
@@ -153,7 +139,6 @@ function useFullscreenConfetti() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -166,32 +151,29 @@ function useFullscreenConfetti() {
 
     resize();
     window.addEventListener("resize", resize);
-
     return () => {
       window.removeEventListener("resize", resize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-      partsRef.current = [];
     };
   }, []);
 
-  const rand = (min: number, max: number) => Math.random() * (max - min) + min;
+  const rand = (a: number, b: number) => Math.random() * (b - a) + a;
   const COLORS = ["#0000FF", "#00D54B", "#FFD12F", "#FF3B30", "#A7FF5A"];
 
-  const spawn = (count: number) => {
-    for (let i = 0; i < count; i++) {
+  const spawn = (n: number) => {
+    for (let i = 0; i < n; i++) {
       partsRef.current.push({
         x: rand(0, window.innerWidth),
-        y: rand(-window.innerHeight * 0.6, -10),
-        vx: rand(-0.8, 0.8),
-        vy: rand(2.2, 5.4),
-        g: rand(0.015, 0.035),
-        w: rand(5, 10),
-        h: rand(6, 16),
+        y: rand(-200, -20),
+        vx: rand(-1, 1),
+        vy: rand(2, 5),
+        g: rand(0.02, 0.04),
+        w: rand(6, 10),
+        h: rand(8, 16),
         rot: rand(0, Math.PI * 2),
-        vr: rand(-0.18, 0.18),
+        vr: rand(-0.2, 0.2),
         alpha: 1,
-        fade: rand(0.004, 0.01),
+        fade: rand(0.005, 0.01),
         color: COLORS[(Math.random() * COLORS.length) | 0],
       });
     }
@@ -207,40 +189,32 @@ function useFullscreenConfetti() {
 
     if (t < untilRef.current) spawn(6);
 
-    const next: ConfettiParticle[] = [];
-    for (const p of partsRef.current) {
+    partsRef.current = partsRef.current.filter((p) => {
       p.vy += p.g;
       p.x += p.vx;
       p.y += p.vy;
       p.rot += p.vr;
-      p.alpha = Math.max(0, p.alpha - p.fade);
+      p.alpha -= p.fade;
 
       ctx.save();
-      ctx.globalAlpha = p.alpha;
+      ctx.globalAlpha = Math.max(0, p.alpha);
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot);
       ctx.fillStyle = p.color;
       ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
       ctx.restore();
 
-      if (p.alpha > 0 && p.y < window.innerHeight + 60) {
-        next.push(p);
-      }
-    }
+      return p.alpha > 0 && p.y < window.innerHeight + 40;
+    });
 
-    partsRef.current = next;
-
-    if (t < untilRef.current || partsRef.current.length > 0) {
+    if (t < untilRef.current || partsRef.current.length) {
       rafRef.current = requestAnimationFrame(tick);
-    } else {
-      rafRef.current = null;
-      partsRef.current = [];
     }
   };
 
   const launch = () => {
     untilRef.current = performance.now() + 2200;
-    spawn(220);
+    spawn(200);
     if (!rafRef.current) rafRef.current = requestAnimationFrame(tick);
   };
 
@@ -259,7 +233,6 @@ export default function HomePage() {
     image: "",
     bio: "Tap the button below.",
   });
-
   const [celebrate, setCelebrate] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const lastWinnerRef = useRef<Person | null>(null);
@@ -270,26 +243,20 @@ export default function HomePage() {
 
   async function spin() {
     if (!people.length || spinning) return;
-
     setSpinning(true);
     setCelebrate(false);
     lastWinnerRef.current = null;
 
     const winner = people[Math.floor(Math.random() * people.length)];
 
-    for (let i = 0; i < 22; i++) {
+    for (let i = 0; i < 20; i++) {
       setCurrent(people[Math.floor(Math.random() * people.length)]);
-      await sleep(45);
-    }
-    for (let i = 0; i < 12; i++) {
-      setCurrent(people[Math.floor(Math.random() * people.length)]);
-      await sleep(85 + i * 18);
+      await sleep(50);
     }
 
     setCurrent(winner);
     lastWinnerRef.current = winner;
     setCelebrate(true);
-
     launch();
     setSpinning(false);
   }
@@ -304,32 +271,66 @@ export default function HomePage() {
 
   return (
     <>
-      <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, pointerEvents: "none" }} />
+      <canvas ref={canvasRef} id="confetti" />
 
-      <main style={{ padding: 32, textAlign: "center" }}>
-        <h1>How based are you in 2026?</h1>
+      <div className="wrap">
+        <div className="hero">
+          <div className="tag">2026 EDITION</div>
+          <h1>How based are you in 2026?</h1>
+          <p className="sub">Tap <b>Based me</b> — quick spin, and we’ll rate how based you are.</p>
+        </div>
 
-        <img
-          src={current.image || "/avatars/default.png"}
-          width={200}
-          height={200}
-          style={{ borderRadius: 32, marginTop: 24 }}
-          onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/avatars/default.png")}
-        />
+        <section className="panel">
+          <div className={`stage ${celebrate ? "celebrate" : ""}`}>
+            <div className="congratsText">Congratulations</div>
 
-        <h2>{current.handle}</h2>
-        <p>{current.bio}</p>
+            <a className="avatarLink" href={url} target="_blank" rel="noreferrer">
+              <img
+                src={current.image || "/avatars/default.png"}
+                onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/avatars/default.png")}
+              />
+            </a>
 
-        <button onClick={spin} disabled={spinning}>
-          Based me
-        </button>
+            <a className="handleLink" href={url} target="_blank" rel="noreferrer">
+              {current.handle}
+            </a>
 
-        {celebrate && (
-          <button style={{ marginLeft: 12 }} onClick={onShare}>
-            Share on X
-          </button>
-        )}
-      </main>
+            <div className="bio">{current.bio}</div>
+          </div>
+
+          <div className="actions">
+            <button className="primary" onClick={spin} disabled={spinning}>
+              Based me
+            </button>
+            {celebrate && (
+              <button className="share" onClick={onShare}>
+                Share on X
+              </button>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* ===== STYLES ===== */}
+      <style jsx global>{`
+        body { margin:0; font-family:system-ui; background:#fff; color:#0a0b0d; }
+        #confetti{ position:fixed; inset:0; pointer-events:none; z-index:10 }
+        .wrap{ min-height:100vh; display:grid; place-items:center; padding:32px }
+        .hero{ text-align:center }
+        .tag{ font-size:12px; letter-spacing:.12em; opacity:.6 }
+        h1{ font-size:56px; margin:12px 0 }
+        .sub{ color:#666 }
+        .panel{ margin-top:32px; border:1px solid #eee; border-radius:32px; padding:32px; text-align:center }
+        .stage{ display:flex; flex-direction:column; align-items:center; gap:16px }
+        .avatarLink{ width:220px; height:220px; border-radius:32px; overflow:hidden; border:1px solid #eee }
+        .avatarLink img{ width:100%; height:100%; object-fit:cover }
+        .handleLink{ font-size:36px; font-weight:900; text-decoration:none; color:#000 }
+        .bio{ color:#666 }
+        .actions{ margin-top:24px; display:flex; gap:12px; justify-content:center }
+        button{ padding:14px 22px; border-radius:16px; font-weight:900; cursor:pointer }
+        .primary{ background:#0000ff; color:#fff; border:none }
+        .share{ background:#fff; border:1px solid #ddd }
+      `}</style>
     </>
   );
 }
