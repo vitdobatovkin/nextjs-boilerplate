@@ -6,8 +6,8 @@ type Person = { handle: string; image?: string; bio?: string };
 
 const DEFAULT_BIO = "How based are you in 2026?";
 
-// RAW_PARTICIPANTS — вставь сюда свой массив
-const RAW_PARTICIPANTS: Person[] = [
+// RAW_PARTICIPANTS — оставь как у тебя (массив Person[])
+declare const RAW_PARTICIPANTS: Person[] = [
     { handle:"@brian_armstrong", image:"https://pbs.twimg.com/profile_images/1516832438818770944/n77EwnKU_400x400.png", bio:"Co-founder & CEO at Coinbase" },
     { handle:"@emiliemc", image:"https://pbs.twimg.com/profile_images/1623399970287284224/A5DmX2nx_400x400.jpg", bio:"President and COO at Coinbase, Angel Investor" },
     { handle:"@catferdon", image:"https://pbs.twimg.com/profile_images/570956786867396608/Ksld22NC_400x400.jpeg", bio:"cmo coinbase" },
@@ -67,11 +67,14 @@ const RAW_PARTICIPANTS: Person[] = [
 function sanitize(list: Person[]): Person[] {
   const out: Person[] = [];
   const seen = new Set<string>();
-  for (const p of list) {
+
+  for (const p of list || []) {
     const handle = (p?.handle || "").trim();
     if (!handle.startsWith("@")) continue;
+
     const key = handle.toLowerCase();
     if (seen.has(key)) continue;
+
     seen.add(key);
     out.push({
       handle,
@@ -83,12 +86,14 @@ function sanitize(list: Person[]): Person[] {
 }
 
 function handleToSlug(handle: string) {
-  const h = (handle || "").trim().replace(/^@/, "");
-  return (h || "default").toLowerCase();
+  const raw = (handle || "").trim().replace(/^@/, "").toLowerCase();
+  const safe = raw.replace(/[^a-z0-9_]/g, ""); // убираем всё кроме a-z 0-9 _
+  return safe || "default";
 }
 
 // ✅ Берём аватары из репозитория: public/avatars/<slug>.png
-function localAvatarSrc(handle: string) {
+function localAvatarSrc(handle?: string) {
+  if (!handle) return "/avatars/default.png";
   return `/avatars/${handleToSlug(handle)}.png`;
 }
 
@@ -101,13 +106,11 @@ function profileUrl(handle: string) {
  * Не encode руками — URLSearchParams кодирует 1 раз правильно
  */
 function buildSharePageUrl(winner: { handle: string; bio?: string }) {
-  const base = window.location.origin; // https://based-me.vercel.app
-  const u = new URL("/r", base); // ✅ /r
+  const base = window.location.origin;
+  const u = new URL("/r", base);
 
   u.searchParams.set("handle", winner.handle);
   u.searchParams.set("bio", winner.bio || DEFAULT_BIO);
-
-  // cache-bust для X
   u.searchParams.set("v", String(Date.now()));
 
   return u.toString();
@@ -201,6 +204,7 @@ function useFullscreenConfetti() {
   const tick = (t: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -257,15 +261,13 @@ export default function HomePage() {
   const people = useMemo(() => sanitize(RAW_PARTICIPANTS), []);
   const { canvasRef, launch } = useFullscreenConfetti();
 
-  // ✅ убрали стартовый @… — теперь в начале вообще нет current
   const [current, setCurrent] = useState<Person | null>(null);
-
   const [celebrate, setCelebrate] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const lastWinnerRef = useRef<Person | null>(null);
 
   useEffect(() => {
-    // ⚠️ не прелоадим все сразу (сотни запросов), только дефолт
+    // грузим только дефолт сразу
     preload("/avatars/default.png");
   }, []);
 
@@ -289,6 +291,7 @@ export default function HomePage() {
       setCurrent(p);
       await sleep(45);
     }
+
     for (let i = 0; i < 12; i++) {
       const p = people[Math.floor(Math.random() * people.length)];
       preload(localAvatarSrc(p.handle));
@@ -299,7 +302,6 @@ export default function HomePage() {
     setCurrent(winner);
     lastWinnerRef.current = winner;
     setCelebrate(true);
-
     launch();
     setSpinning(false);
   }
@@ -341,17 +343,14 @@ export default function HomePage() {
                 if (!current) e.preventDefault();
               }}
             >
-              {current ? (
-                <img
-                  alt={current.handle}
-                  src={localAvatarSrc(current.handle)}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/avatars/default.png";
-                  }}
-                />
-              ) : (
-                <div className="avatarSkeleton" aria-hidden="true" />
-              )}
+              {/* ✅ всегда есть img: сначала default */}
+              <img
+                alt={current ? current.handle : "default avatar"}
+                src={localAvatarSrc(current?.handle)}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/avatars/default.png";
+                }}
+              />
             </a>
 
             <div className="meta">
@@ -518,17 +517,6 @@ export default function HomePage() {
           height:100%;
           object-fit:cover;
           display:block;
-        }
-        .avatarSkeleton{
-          width:100%;
-          height:100%;
-          background: linear-gradient(90deg, #f2f3f5 25%, #e9eaed 37%, #f2f3f5 63%);
-          background-size: 400% 100%;
-          animation: shimmer 1.4s infinite;
-        }
-        @keyframes shimmer {
-          0% { background-position: 0% 0; }
-          100% { background-position: 100% 0; }
         }
         .handleLink{
           display:inline-block;
