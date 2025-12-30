@@ -1079,35 +1079,8 @@ export default function HomePage() {
           color: rgba(10, 10, 10, 0.8);
         }
 
-        /* ✅ Откат мобильных отступов между карточками: как было раньше */
-        @media (max-width: 560px) {
-  .stage {
-    padding: 24px 18px 22px;
-    gap: 10px;
-  }
-  .actions {
-    padding: 16px 18px;
-  }
-
-  .bigReel {
-    height: 200px;
-  }
-  .bigTile {
-    width: 132px;
-    height: 132px;
-    margin-left: -66px;
-    margin-top: -66px;
-    border-radius: 30px;
-  }
-
-  .handleLink {
-    font-size: 26px;
-  }
-  .bio {
-    font-size: 14px;
-  }
-
-  /* ✅ футер: слева Mura, справа Join Base App */
+      /* было: 560px; делаем шире, чтобы iPhone/Safari тоже попал */
+@media (max-width: 820px) {
   .creatorBadge {
     position: fixed;
     left: 14px;
@@ -1122,43 +1095,27 @@ export default function HomePage() {
 
     font-size: 12px;
     line-height: 1;
-    pointer-events: none; /* чтобы не блокировал клики по контенту */
+
+    pointer-events: none;
   }
 
   .creatorRow,
   .baseJoin {
-    pointer-events: auto; /* ссылки кликабельны */
-  }
-
-  .creatorRow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    color: rgba(10, 10, 10, 0.55);
-  }
-
-  .creatorAvatar {
-    width: 18px;
-    height: 18px;
-  }
-
-  .baseJoin {
-    text-decoration: none;
-    font-weight: 600;
-    color: rgba(10, 10, 10, 0.45);
-    padding-left: 0;
+    pointer-events: auto;
+    flex: 0 0 auto;      /* ✅ не сжимать */
+    white-space: nowrap; /* ✅ не переносить */
   }
 
   .baseJoin::before {
-    display: none;
+    display: none; /* как у тебя */
   }
 
-  /* ✅ чтобы футер не налезал на кнопки/нижний контент */
+  /* чтобы футер не налезал на нижний контент/кнопки */
   .wrap {
     padding-bottom: calc(88px + env(safe-area-inset-bottom));
   }
 }
+
 
       `}</style>
     </>
