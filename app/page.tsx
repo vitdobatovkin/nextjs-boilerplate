@@ -27,6 +27,15 @@ function sanitize(list: Person[]): Person[] {
   return out;
 }
 
+// ✅ единственный детектор мобилки (используем ВЕЗДЕ)
+function isMobileDevice() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.innerWidth <= 768 ||
+    /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent)
+  );
+}
+
 function handleToSlug(handle: string) {
   const raw = (handle || "").trim().replace(/^@/, "").toLowerCase();
   const safe = raw.replace(/[^a-z0-9_]/g, "");
@@ -237,21 +246,39 @@ export default function HomePage() {
   // loader gate
   const [ready, setReady] = useState(false);
 
-
   const lastWinnerRef = useRef<Person | null>(null);
 
   // ===== WIN SOUND =====
   const winAudioRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
 
+  // ✅ init win sound ONLY on desktop (на мобиле вообще не создаём Audio)
+  useEffect(() => {
+    if (isMobileDevice()) return;
+
+    const a = new Audio("/sfx/win.wav"); // public/sfx/win.wav
+    a.preload = "auto";
+    a.volume = 0.85;
+    winAudioRef.current = a;
+
+    return () => {
+      try {
+        a.pause();
+      } catch {}
+      winAudioRef.current = null;
+    };
+  }, []);
+
   function unlockAudioOnce() {
+    // ✅ на мобиле никогда не анлочим
+    if (isMobileDevice()) return;
+
     if (audioUnlockedRef.current) return;
     const a = winAudioRef.current;
     if (!a) return;
 
     audioUnlockedRef.current = true;
 
-    // warm-up on user gesture (works on iOS/Safari)
     try {
       a.currentTime = 0;
       const p = a.play();
@@ -262,7 +289,6 @@ export default function HomePage() {
             a.currentTime = 0;
           })
           .catch(() => {
-            // if blocked, try again on the next click
             audioUnlockedRef.current = false;
           });
       } else {
@@ -274,14 +300,9 @@ export default function HomePage() {
     }
   }
 
-  function isMobile() {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(max-width: 560px)").matches;
-  }
-
-
   function playWin() {
-    if (isMobile()) return; // ✅ звук OFF на мобиле
+    // ✅ звук ВСЕГДА OFF на мобиле
+    if (isMobileDevice()) return;
 
     const a = winAudioRef.current;
     if (!a) return;
@@ -292,7 +313,6 @@ export default function HomePage() {
       void a.play();
     } catch {}
   }
-
 
   // ===== Reel parameters (smaller tiles ~16-18%) =====
   const TILE = 200;
@@ -327,18 +347,6 @@ export default function HomePage() {
 
   useEffect(() => {
     preloadOnce("/avatars/default.png").then(() => {});
-  }, []);
-
-  // init win sound
-  useEffect(() => {
-    const a = new Audio("/sfx/win.wav"); // ✅ your file: public/sfx/win.wav
-    a.preload = "auto";
-    a.volume = 0.85;
-    winAudioRef.current = a;
-
-    return () => {
-      winAudioRef.current = null;
-    };
   }, []);
 
   useEffect(() => {
@@ -413,7 +421,7 @@ export default function HomePage() {
           setSpinning(false);
           setMode("locked");
           launch();
-          playWin(); // ✅ WIN SOUND
+          playWin(); // ✅ WIN SOUND (desktop only)
 
           stopLoop();
           return;
@@ -444,8 +452,8 @@ export default function HomePage() {
   }
 
   async function spin() {
-    if (!isMobile()) unlockAudioOnce();
-    unlockAudioOnce(); // ✅ unlock audio on user click
+    // ✅ на мобиле ничего не делаем со звуком
+    unlockAudioOnce();
 
     if (!people.length) return;
     if (!ready) return;
@@ -512,9 +520,8 @@ export default function HomePage() {
   const shownPerson = mode === "locked" ? current : centerPerson;
   const url = shownPerson ? profileUrl(shownPerson.handle) : "#";
 
-  // ✅ показываем подсказки только ДО первого спина, и не показываем в locked
- const showHints = mode !== "locked";
-
+  // ✅ подсказки показываем всегда когда не locked (возвращаются при повторном спине)
+  const showHints = mode !== "locked";
 
   return (
     <>
@@ -546,7 +553,6 @@ export default function HomePage() {
           >
             <div className="congratsText">Congratulations</div>
 
-            {/* ✅ ВВЕРХУ (КАПС): Spinning through... */}
             {showHints && (
               <div className="carouselHintTop">
                 Spinning through the most based builders on X
@@ -612,14 +618,12 @@ export default function HomePage() {
               <div className="bigReelMask" aria-hidden="true"></div>
             </div>
 
-            {/* ✅ СНИЗУ (НЕ КАПС): Spin to find... */}
             {showHints && (
               <div className="carouselHintBottom">
                 Spin to find which one you’re most based as
               </div>
             )}
 
-            {/* ✅ В locked показываем только основной блок результата (без дублей) */}
             {mode === "locked" && shownPerson && (
               <div className="meta">
                 <a
@@ -846,7 +850,6 @@ export default function HomePage() {
         }
 
         /* Copy around carousel */
-        /* TOP: CAPS */
         .carouselHintTop {
           font-size: 13px;
           font-weight: 700;
@@ -855,7 +858,6 @@ export default function HomePage() {
           color: rgba(10, 10, 10, 0.45);
           margin-bottom: 6px;
         }
-        /* BOTTOM: NOT CAPS */
         .carouselHintBottom {
           font-size: 14px;
           color: rgba(10, 10, 10, 0.55);
@@ -905,7 +907,6 @@ export default function HomePage() {
             opacity 0.25s ease, box-shadow 0.35s ease,
             border-color 0.35s ease;
         }
-        /* remove jitter while rAF moves */
         .stage.animating .bigTile {
           transition: none !important;
         }
@@ -1078,61 +1079,37 @@ export default function HomePage() {
           color: rgba(10, 10, 10, 0.8);
         }
 
-        @media (max-width: 560px){
-  .wrap{
-    padding: 18px 14px calc(22px + env(safe-area-inset-bottom));
-  }
-  .hero{ margin-bottom: 10px; }
-
-  .panel{
-    margin: 18px auto 0;
-  }
-
-  .stage{ padding:24px 18px 22px; gap:10px; }
-  .actions{ padding:16px 18px; }
-
-  .bigReel{ height: 200px; padding: 0 6px;}
-  .bigTile{
-    width: 132px;
-    height: 132px;
-    margin-left: -56px;
-    margin-top: -66px;
-    border-radius: 30px;
-  }
-  .handleLink{ font-size:26px; }
-  .bio{ font-size:14px; }
-
-  /* 👇 creator badge: В ДВЕ СТРОКИ */
- .creatorBadge{
-    position: relative;
-    width: 100%;
-    margin-top: 16px;
-    padding: 14px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    font-size: 12px;
-    color: rgba(10,10,10,.45);
-
-    border-top: 1px solid rgba(10,10,10,.06);
-    background: transparent;
-  }
-
-  .creatorRow{
-    justify-content: center;
-    margin-left: 8px;
-  }
-
-  .baseJoin{
-    padding-left: 0;
-    font-size: 13px;
-  }
-  .baseJoin::before{
-    display: none;
-  }
-}
-
+        /* ✅ Откат мобильных отступов между карточками: как было раньше */
+        @media (max-width: 560px) {
+          .stage {
+            padding: 24px 18px 22px;
+            gap: 10px;
+          }
+          .actions {
+            padding: 16px 18px;
+          }
+          .bigReel {
+            height: 200px;
+          }
+          .bigTile {
+            width: 132px;
+            height: 132px;
+            margin-left: -66px; /* ✅ откат */
+            margin-top: -66px;  /* ✅ откат */
+            border-radius: 30px;
+          }
+          .handleLink {
+            font-size: 26px;
+          }
+          .bio {
+            font-size: 14px;
+          }
+          .creatorBadge {
+            right: 14px;
+            bottom: 12px;
+            font-size: 12px;
+          }
+        }
       `}</style>
     </>
   );
