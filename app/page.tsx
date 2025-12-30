@@ -1121,7 +1121,7 @@ export default function HomePage() {
 
   .creatorRow{
     justify-content: center;
-    margin-left: 4px;
+    margin-left: 8px;
   }
 
   .baseJoin{
