@@ -39,11 +39,9 @@ function localAvatarSrc(handle?: string) {
 }
 
 function avatarSrc(p?: Person | null) {
-  // Если в RAW_PARTICIPANTS есть p.image (URL или /path) — используем его.
-  // Иначе — локальный файл по handle.
   if (!p) return "/avatars/default.png";
   const img = (p.image || "").trim();
-  if (img) return img;
+  if (img) return img; // prefer explicit mapping if present
   return localAvatarSrc(p.handle);
 }
 
@@ -89,7 +87,7 @@ function preloadOnce(src: string) {
     const img = new Image();
     img.decoding = "async";
     img.onload = () => resolve();
-    img.onerror = () => resolve(); // не блокируем, даже если нет файла
+    img.onerror = () => resolve(); // don't block on missing/cors
     img.src = src;
   });
 }
@@ -225,20 +223,20 @@ export default function HomePage() {
   const people = useMemo(() => sanitize(RAW_PARTICIPANTS), []);
   const { canvasRef, launch } = useFullscreenConfetti();
 
-  // current — ТОЛЬКО для locked (победитель)
+  // winner only (locked)
   const [current, setCurrent] = useState<Person | null>(null);
 
   const [celebrate, setCelebrate] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const [mode, setMode] = useState<Mode>("idle");
 
-  // Лоадер: пока не подгрузим стартовые аватарки — не даём жать "Based me"
+  // loader gate
   const [ready, setReady] = useState(false);
 
   const lastWinnerRef = useRef<Person | null>(null);
 
   // ===== Reel parameters (smaller tiles ~16-18%) =====
-  const TILE = 200; // было 240
+  const TILE = 200;
   const GAP = 24;
   const STEP = TILE + GAP;
 
@@ -269,7 +267,6 @@ export default function HomePage() {
   const [, forceFrame] = useState(0);
 
   useEffect(() => {
-    // дефолт тоже прогреем
     preloadOnce("/avatars/default.png").then(() => {});
   }, []);
 
@@ -285,22 +282,19 @@ export default function HomePage() {
       const startFrac = Math.random();
       phasePxRef.current = (startIndex + startFrac) * STEP;
 
-      // Загружаем стартовое окно + запас (чтобы не было "прыжков" от поздних загрузок)
+      // Preload an initial window so UI doesn’t “pop”
       const R = 18;
       const tasks: Promise<void>[] = [];
       for (let d = -R; d <= R; d++) {
         const p = people[mod(startIndex + d, people.length)];
         if (p) tasks.push(preloadOnce(avatarSrc(p)));
       }
-
       await Promise.all(tasks);
 
       if (!alive) return;
 
-      // В locked пока никого, в idle центр берём из вычислений
       setCurrent(null);
       setReady(true);
-
       startLoop();
     })();
 
@@ -343,9 +337,7 @@ export default function HomePage() {
           const winner = people[tw.winnerIndex];
           lastWinnerRef.current = winner ?? null;
 
-          // фиксируем победителя в state, и дальше UI берёт данные строго отсюда
           setCurrent(winner ?? null);
-
           setCelebrate(true);
           setSpinning(false);
           setMode("locked");
@@ -365,18 +357,14 @@ export default function HomePage() {
         phasePxRef.current = phasePxRef.current % (len * STEP);
       }
 
-      // preload вокруг центра (без setState, чтобы не было рассинхрона)
+      // warm around center (no setState => no mismatch)
       const baseIndex = Math.floor(phasePxRef.current / STEP);
       const centerIndex = mod(baseIndex, len);
       for (let d = -12; d <= 12; d++) {
         const pp = people[mod(centerIndex + d, len)];
-        if (pp) {
-          // fire-and-forget
-          preloadOnce(avatarSrc(pp)).then(() => {});
-        }
+        if (pp) preloadOnce(avatarSrc(pp)).then(() => {});
       }
 
-      // перерисовка позиций
       forceFrame((x) => (x + 1) % 1_000_000);
     };
 
@@ -392,7 +380,7 @@ export default function HomePage() {
     setCelebrate(false);
     setMode("spinning");
     lastWinnerRef.current = null;
-    setCurrent(null); // сброс, пока крутится
+    setCurrent(null);
 
     startLoop();
 
@@ -404,23 +392,20 @@ export default function HomePage() {
     const startPhase = phasePxRef.current;
     const startBase = Math.floor(startPhase / STEP);
 
-    // ВАЖНО: центр в рендере = baseIndex (не +HALF)
+    // center in render = baseIndex
     const currentCenterIndex = mod(startBase, len);
     const forward = mod(winnerIndex - currentCenterIndex, len);
-
     const loops = 2 + ((Math.random() * 3) | 0);
 
-    // SNAP: endPhase строго кратен STEP => победитель будет идеально в центре
+    // SNAP: endPhase multiple of STEP => perfect center
     let endBase = startBase + forward;
     let endPhase = endBase * STEP;
 
-    // гарантируем "вперёд" с учётом дробной стартовой позиции
     if (endPhase <= startPhase) {
       endBase += len;
       endPhase = endBase * STEP;
     }
 
-    // добавляем красивые круги
     endBase += loops * len;
     endPhase = endBase * STEP;
 
@@ -440,7 +425,7 @@ export default function HomePage() {
     window.open(buildXIntentUrl(w), "_blank", "noopener,noreferrer");
   }
 
-  // ===== Derive "who is center" directly from phase (NO STATE LAG) =====
+  // ===== Derive center from phase (no state lag) =====
   const len = people.length;
   const phase = phasePxRef.current;
 
@@ -450,15 +435,20 @@ export default function HomePage() {
 
   const centerPerson = len ? people[mod(baseIndex, len)] : null;
   const shownPerson = mode === "locked" ? current : centerPerson;
-
   const url = shownPerson ? profileUrl(shownPerson.handle) : "#";
+
+  // ✅ BEST COPY (recommended)
+  const topCopy = "Spinning through the most based builders on X";
+  const bottomCopy =
+    mode === "locked" && shownPerson
+      ? `You’re based as ${shownPerson.handle}`
+      : "Spin to find which one you’re most based as";
 
   return (
     <>
       <div className="texture" aria-hidden="true"></div>
       <canvas ref={canvasRef} id="confetti" aria-hidden="true"></canvas>
 
-      {/* Loader overlay */}
       {!ready && (
         <div className="loadingOverlay" aria-label="Loading avatars">
           <div className="spinner" />
@@ -484,6 +474,9 @@ export default function HomePage() {
           >
             <div className="congratsText">Congratulations</div>
 
+            {/* ✅ TOP TEXT */}
+            <div className="carouselHintTop">{topCopy}</div>
+
             <div className="bigReel" aria-label="reel">
               <div className="bigReelTrack" role="presentation">
                 {Array.from({ length: WINDOW }).map((_, i) => {
@@ -495,8 +488,6 @@ export default function HomePage() {
                   const dist = Math.abs(x) / STEP;
 
                   const isCenter = i === HALF;
-
-                  // В locked победитель — это тот, кто стоит в центре (и он же shownPerson)
                   const allowClick = mode === "locked" && isCenter && !!shownPerson;
 
                   const popScale = allowClick ? 1.12 : 1;
@@ -531,7 +522,8 @@ export default function HomePage() {
                         src={avatarSrc(p)}
                         loading="eager"
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = "/avatars/default.png";
+                          (e.currentTarget as HTMLImageElement).src =
+                            "/avatars/default.png";
                         }}
                       />
                       {allowClick && <div className="winnerBadge">WINNER</div>}
@@ -542,6 +534,9 @@ export default function HomePage() {
 
               <div className="bigReelMask" aria-hidden="true"></div>
             </div>
+
+            {/* ✅ BOTTOM TEXT */}
+            <div className="carouselHintBottom">{bottomCopy}</div>
 
             {mode === "locked" && shownPerson && (
               <div className="meta">
@@ -724,7 +719,7 @@ export default function HomePage() {
           flex-direction: column;
           align-items:center;
           justify-content:center;
-          gap: 18px;
+          gap: 14px;
           padding: 54px 72px 46px;
           text-align:center;
           position:relative;
@@ -740,6 +735,21 @@ export default function HomePage() {
           transition: opacity .18s ease;
         }
         .stage.celebrate .congratsText{ opacity: 1; }
+
+        /* ✅ Copy around carousel */
+        .carouselHintTop{
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: .08em;
+          text-transform: uppercase;
+          color: rgba(10,10,10,.45);
+          margin-bottom: 4px;
+        }
+        .carouselHintBottom{
+          font-size: 14px;
+          color: rgba(10,10,10,.55);
+          margin-top: 4px;
+        }
 
         /* ===== REEL ===== */
         .bigReel{
@@ -783,7 +793,7 @@ export default function HomePage() {
             box-shadow .35s ease,
             border-color .35s ease;
         }
-        /* Убираем дергание: никаких transition во время rAF-движения */
+        /* No CSS transitions while rAF moves tiles (prevents jitter) */
         .stage.animating .bigTile{
           transition: none !important;
         }
@@ -954,7 +964,7 @@ export default function HomePage() {
         }
 
         @media (max-width: 560px){
-          .stage{ padding:24px 18px 22px; gap:12px; }
+          .stage{ padding:24px 18px 22px; gap:10px; }
           .actions{ padding:16px 18px; }
 
           .bigReel{ height: 200px; }
