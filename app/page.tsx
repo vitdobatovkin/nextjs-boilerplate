@@ -218,38 +218,34 @@ export default function HomePage() {
   const [mode, setMode] = useState<Mode>("idle");
   const lastWinnerRef = useRef<Person | null>(null);
 
-  // ===== Reel parameters (2x) =====
-  const TILE = 340;
-  const GAP = 34;
+  // ===== Reel parameters (reduced ~30%) =====
+  const TILE = 240; // was 340
+  const GAP = 28;
   const STEP = TILE + GAP;
 
-  const WINDOW = 7; // big tiles, fewer visible
-  const HALF = Math.floor(WINDOW / 2); // center slot index
+  const WINDOW = 9; // can show more now
+  const HALF = Math.floor(WINDOW / 2);
 
-  // ===== Continuous phase-based reel (NO micro-stutter) =====
-  // phasePx grows continuously; baseIndex changes only when passing STEP,
-  // but visual stays smooth because content shifts at the edges.
-  const phasePxRef = useRef<number>(0); // in px
+  // ===== Continuous phase-based reel =====
+  const phasePxRef = useRef<number>(0);
   const rafRef = useRef<number | null>(null);
   const lastTRef = useRef<number>(0);
 
-  // tween: animate phase by a planned distance, easing out to stop on winner
   const tweenRef = useRef<{
-  active: boolean;
-  startPhase: number;
-  endPhase: number;
-  t0: number;
-  dur: number;
-  winnerIndex: number;
-}>({
-  active: false,
-  startPhase: 0,
-  endPhase: 0,
-  t0: 0,
-  dur: 0,
-  winnerIndex: 0,
-});
-
+    active: boolean;
+    startPhase: number;
+    endPhase: number;
+    t0: number;
+    dur: number;
+    winnerIndex: number;
+  }>({
+    active: false,
+    startPhase: 0,
+    endPhase: 0,
+    t0: 0,
+    dur: 0,
+    winnerIndex: 0,
+  });
 
   const [, forceFrame] = useState(0);
 
@@ -257,16 +253,13 @@ export default function HomePage() {
     preload("/avatars/default.png");
   }, []);
 
-  // init
   useEffect(() => {
     if (!people.length) return;
 
-    // start somewhere random + random fractional to avoid “locking” feeling
     const startIndex = (Math.random() * people.length) | 0;
-    const startFrac = Math.random(); // 0..1
+    const startFrac = Math.random();
     phasePxRef.current = (startIndex + startFrac) * STEP;
 
-    // preload neighborhood
     for (let d = -18; d <= 18; d++) {
       const p = people[mod(startIndex + d, people.length)];
       if (p) preload(localAvatarSrc(p.handle));
@@ -317,32 +310,25 @@ export default function HomePage() {
           setMode("locked");
           launch();
 
-          // stop until next click
           stopLoop();
           return;
         }
       } else {
         if (mode === "idle") {
-          // smooth constant speed
-          const speedPx = STEP * 0.55; // ~0.55 tiles/sec
+          const speedPx = STEP * 0.55;
           phasePxRef.current += speedPx * dt;
         }
       }
 
-      // keep phase bounded (optional)
       if (phasePxRef.current > 1e12) phasePxRef.current = phasePxRef.current % (len * STEP);
 
-      // update current only for preloading (no visual snap)
-      // center slot corresponds to baseIndex + HALF
       const baseIndex = Math.floor(phasePxRef.current / STEP);
       const centerIndex = mod(baseIndex + HALF, len);
 
-      // keep current “roughly” updated (meta hidden until locked anyway)
       if (mode !== "locked") {
         const p = people[centerIndex];
         if (p && p.handle !== current?.handle) {
           setCurrent(p);
-          // preload around center
           for (let d = -18; d <= 18; d++) {
             const pp = people[mod(centerIndex + d, len)];
             if (pp) preload(localAvatarSrc(pp.handle));
@@ -368,26 +354,18 @@ export default function HomePage() {
     startLoop();
 
     const len = people.length;
-
     const winnerIndex = (Math.random() * len) | 0;
     const winner = people[winnerIndex];
     if (winner) preload(localAvatarSrc(winner.handle));
 
     const startPhase = phasePxRef.current;
-
-    // current base and fractional position
     const startBase = Math.floor(startPhase / STEP);
-    const frac = (startPhase - startBase * STEP) / STEP; // 0..1
 
-    // center currently corresponds to startBase + HALF
     const currentCenterIndex = mod(startBase + HALF, len);
-
-    // how many steps forward to land winner in center
     const forward = mod(winnerIndex - currentCenterIndex, len);
-    const loops = 2 + ((Math.random() * 3) | 0); // 2..4
+    const loops = 2 + ((Math.random() * 3) | 0);
     const steps = loops * len + forward;
 
-    // endPhase should advance by steps * STEP (keeping same frac so motion feels continuous)
     const endPhase = startPhase + steps * STEP;
 
     tweenRef.current = {
@@ -395,7 +373,7 @@ export default function HomePage() {
       startPhase,
       endPhase,
       t0: performance.now(),
-      dur: 2100 + loops * 520,
+      dur: 2000 + loops * 520,
       winnerIndex,
     };
   }
@@ -408,13 +386,12 @@ export default function HomePage() {
 
   const url = current ? profileUrl(current.handle) : "#";
 
-  // ----- derive strip layout from phase -----
   const len = people.length;
   const phase = phasePxRef.current;
 
   const baseIndex = Math.floor(phase / STEP);
-  const fracPx = phase - baseIndex * STEP; // 0..STEP
-  const offset = -fracPx; // moves tiles left continuously
+  const fracPx = phase - baseIndex * STEP;
+  const offset = -fracPx;
 
   return (
     <>
@@ -434,11 +411,9 @@ export default function HomePage() {
           <div className={`stage ${celebrate ? "celebrate" : ""}`} aria-live="polite">
             <div className="congratsText">Congratulations</div>
 
-            {/* BIG REEL (2x) — no center outline, no snap */}
             <div className="bigReel" aria-label="reel">
               <div className="bigReelTrack" role="presentation">
                 {Array.from({ length: WINDOW }).map((_, i) => {
-                  // slot i is stable (key=i), content changes seamlessly
                   const virtualIndex = baseIndex + (i - HALF);
                   const idx = len ? mod(virtualIndex, len) : 0;
                   const p = people[idx];
@@ -446,12 +421,20 @@ export default function HomePage() {
                   const x = (i - HALF) * STEP + offset;
 
                   const dist = Math.abs(x) / STEP;
-                  const opacity = clamp(1 - dist * 0.14, 0.18, 1);
 
                   const isCenter = i === HALF;
                   const allowClick = mode === "locked" && isCenter && !!current;
-                  const popScale = allowClick ? 1.06 : 1;
-                  const popY = allowClick ? -10 : 0;
+
+                  // Winner emphasis when locked
+                  const popScale = allowClick ? 1.12 : 1;
+                  const popY = allowClick ? -18 : 0;
+
+                  const opacity =
+                    mode === "locked"
+                      ? isCenter
+                        ? 1
+                        : 0.35
+                      : clamp(1 - dist * 0.14, 0.18, 1);
 
                   return (
                     <a
@@ -483,11 +466,9 @@ export default function HomePage() {
                 })}
               </div>
 
-              {/* only side fade mask */}
               <div className="bigReelMask" aria-hidden="true"></div>
             </div>
 
-            {/* META only after locked */}
             {mode === "locked" && current && (
               <div className="meta">
                 <a className="handleLink" href={url} target="_blank" rel="noreferrer">
@@ -526,7 +507,6 @@ export default function HomePage() {
         </section>
       </div>
 
-      {/* creator badge */}
       <div className="creatorBadge">
         <a href="https://x.com/0x_mura" target="_blank" rel="noreferrer" className="creatorRow">
           <img
@@ -645,10 +625,10 @@ export default function HomePage() {
         }
         .stage.celebrate .congratsText{ opacity: 1; }
 
-        /* ===== BIG REEL (2x) ===== */
+        /* ===== REEL ===== */
         .bigReel{
           width: min(1180px, 96vw);
-          height: 420px;
+          height: 310px;
           position: relative;
           display:flex;
           align-items:center;
@@ -663,26 +643,28 @@ export default function HomePage() {
           align-items:center;
           justify-content:center;
         }
-
         .bigTile{
           position: absolute;
           top: 50%;
           left: 50%;
-          width: 340px;
-          height: 340px;
-          margin-left: -170px;
-          margin-top: -170px;
+          width: 240px;
+          height: 240px;
+          margin-left: -120px;
+          margin-top: -120px;
 
-          border-radius: 62px;
+          border-radius: 44px;
           overflow:hidden;
           border: 1px solid rgba(10,10,10,.10);
           background: var(--card);
-          box-shadow: 0 20px 60px rgba(0,0,0,.08);
+          box-shadow: 0 18px 52px rgba(0,0,0,.08);
 
           display:block;
           will-change: transform, opacity;
-          /* IMPORTANT: no big “snap” transitions while moving */
-          transition: box-shadow .22s ease, border-color .22s ease;
+          transition:
+            transform .35s cubic-bezier(.2,.8,.2,1),
+            opacity .25s ease,
+            box-shadow .35s ease,
+            border-color .35s ease;
         }
         .bigTile img{
           width:100%;
@@ -690,9 +672,13 @@ export default function HomePage() {
           object-fit: cover;
           display:block;
         }
+
+        /* Stronger winner highlight (no center frame) */
         .bigTile.winner{
-          box-shadow: 0 34px 96px rgba(0,0,0,.14);
-          border-color: rgba(10,10,10,.14);
+          box-shadow:
+            0 40px 110px rgba(0,0,0,.22),
+            0 0 0 2px rgba(0,0,0,.06);
+          border-color: rgba(10,10,10,.16);
         }
 
         .bigReelMask{
@@ -835,14 +821,14 @@ export default function HomePage() {
           .stage{ padding:24px 18px 22px; gap:12px; }
           .actions{ padding:16px 18px; }
 
-          .bigReel{ height: 260px; }
+          .bigReel{ height: 220px; }
 
           .bigTile{
-            width: 200px;
-            height: 200px;
-            margin-left: -100px;
-            margin-top: -100px;
-            border-radius: 40px;
+            width: 160px;
+            height: 160px;
+            margin-left: -80px;
+            margin-top: -80px;
+            border-radius: 34px;
           }
 
           .handleLink{ font-size:26px; }
