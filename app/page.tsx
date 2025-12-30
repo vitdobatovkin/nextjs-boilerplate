@@ -1072,36 +1072,54 @@ export default function HomePage() {
           color: rgba(10, 10, 10, 0.8);
         }
 
-        @media (max-width: 560px) {
-          .stage {
-            padding: 24px 18px 22px;
-            gap: 10px;
-          }
-          .actions {
-            padding: 16px 18px;
-          }
-          .bigReel {
-            height: 200px;
-          }
-          .bigTile {
-            width: 132px;
-            height: 132px;
-            margin-left: -66px;
-            margin-top: -66px;
-            border-radius: 30px;
-          }
-          .handleLink {
-            font-size: 26px;
-          }
-          .bio {
-            font-size: 14px;
-          }
-          .creatorBadge {
-            right: 14px;
-            bottom: 12px;
-            font-size: 12px;
-          }
-        }
+        @media (max-width: 560px){
+  .wrap{
+    padding: 18px 14px calc(22px + env(safe-area-inset-bottom));
+  }
+  .hero{ margin-bottom: 10px; }
+
+  /* было: margin: 44px auto 0; -> уменьшаем большой отступ сверху */
+  .panel{
+    margin: 18px auto 0;
+  }
+
+  .stage{ padding:24px 18px 22px; gap:10px; }
+  .actions{ padding:16px 18px; }
+
+  .bigReel{ height: 200px; }
+  .bigTile{
+    width: 132px;
+    height: 132px;
+    margin-left: -66px;
+    margin-top: -66px;
+    border-radius: 30px;
+  }
+  .handleLink{ font-size:26px; }
+  .bio{ font-size:14px; }
+
+  /* фикс: чтобы 0x_mura не залезал на кнопки/разметку на iOS */
+  .creatorBadge{
+    position: static;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px auto 0;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .creatorRow{
+    gap: 8px;
+  }
+
+  .baseJoin{
+    padding-left: 0;
+  }
+  .baseJoin::before{
+    display: none;
+  }
+}
+
       `}</style>
     </>
   );
