@@ -62,7 +62,10 @@ function buildSharePageUrl(winner: { handle: string; bio?: string }) {
 
 function buildXIntentUrl(winner: { handle: string; bio?: string }) {
   const sharePageUrl = buildSharePageUrl(winner);
-  const text = `I’m based as ${winner.handle} 😎\nHow based are you in 2026?`;
+  const text =
+  `I’m based as ${winner.handle} 🟦\n` +
+  `How based are you in 2026?\n\n` +
+  `Try yourself: https://based-me.vercel.app`;
 
   const intent = new URL("https://x.com/intent/post");
   intent.searchParams.set("text", text);
