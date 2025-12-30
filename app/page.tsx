@@ -41,7 +41,7 @@ function localAvatarSrc(handle?: string) {
 function avatarSrc(p?: Person | null) {
   if (!p) return "/avatars/default.png";
   const img = (p.image || "").trim();
-  if (img) return img;
+  if (img) return img; // prefer explicit mapping
   return localAvatarSrc(p.handle);
 }
 
@@ -52,15 +52,18 @@ function profileUrl(handle: string) {
 function buildSharePageUrl(winner: { handle: string; bio?: string }) {
   const base = window.location.origin;
   const u = new URL("/r", base);
+
   u.searchParams.set("handle", winner.handle);
   u.searchParams.set("bio", winner.bio || DEFAULT_BIO);
   u.searchParams.set("v", String(Date.now()));
+
   return u.toString();
 }
 
 function buildXIntentUrl(winner: { handle: string; bio?: string }) {
   const sharePageUrl = buildSharePageUrl(winner);
   const text = `I’m based as ${winner.handle} 😎\nHow based are you in 2026?`;
+
   const intent = new URL("https://x.com/intent/post");
   intent.searchParams.set("text", text);
   intent.searchParams.set("url", sharePageUrl);
@@ -89,7 +92,7 @@ function preloadOnce(src: string) {
   });
 }
 
-// ===== CONFETTI (fullscreen, TS-safe) =====
+// ===== CONFETTI (fullscreen) =====
 type ConfettiParticle = {
   x: number;
   y: number;
@@ -116,7 +119,7 @@ function useFullscreenConfetti() {
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return; // ✅ ctx точно не null ниже
+    if (!ctx) return;
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -222,6 +225,7 @@ export default function HomePage() {
 
   // winner only (locked)
   const [current, setCurrent] = useState<Person | null>(null);
+
   const [celebrate, setCelebrate] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const [mode, setMode] = useState<Mode>("idle");
@@ -229,12 +233,12 @@ export default function HomePage() {
   // loader gate
   const [ready, setReady] = useState(false);
 
-  // show hints only before first spin
+  // ✅ показать подсказки только ДО первого спина
   const [hasSpun, setHasSpun] = useState(false);
 
   const lastWinnerRef = useRef<Person | null>(null);
 
-  // ===== Reel parameters =====
+  // ===== Reel parameters (smaller tiles ~16-18%) =====
   const TILE = 200;
   const GAP = 24;
   const STEP = TILE + GAP;
@@ -281,6 +285,7 @@ export default function HomePage() {
       const startFrac = Math.random();
       phasePxRef.current = (startIndex + startFrac) * STEP;
 
+      // preload стартового окна
       const R = 18;
       const tasks: Promise<void>[] = [];
       for (let d = -R; d <= R; d++) {
@@ -339,7 +344,7 @@ export default function HomePage() {
           setCelebrate(true);
           setSpinning(false);
           setMode("locked");
-          setHasSpun(true);
+          setHasSpun(true); // ✅ после первого результата скрываем подсказки навсегда
           launch();
 
           stopLoop();
@@ -356,6 +361,7 @@ export default function HomePage() {
         phasePxRef.current = phasePxRef.current % (len * STEP);
       }
 
+      // preload вокруг центра (без setState)
       const baseIndex = Math.floor(phasePxRef.current / STEP);
       const centerIndex = mod(baseIndex, len);
       for (let d = -12; d <= 12; d++) {
@@ -390,10 +396,12 @@ export default function HomePage() {
     const startPhase = phasePxRef.current;
     const startBase = Math.floor(startPhase / STEP);
 
+    // центр в рендере = baseIndex
     const currentCenterIndex = mod(startBase, len);
     const forward = mod(winnerIndex - currentCenterIndex, len);
     const loops = 2 + ((Math.random() * 3) | 0);
 
+    // SNAP: endPhase кратен STEP => победитель строго по центру
     let endBase = startBase + forward;
     let endPhase = endBase * STEP;
 
@@ -421,7 +429,7 @@ export default function HomePage() {
     window.open(buildXIntentUrl(w), "_blank", "noopener,noreferrer");
   }
 
-  // ===== Derive center from phase =====
+  // ===== Derive center from phase (no state lag) =====
   const len = people.length;
   const phase = phasePxRef.current;
 
@@ -433,12 +441,13 @@ export default function HomePage() {
   const shownPerson = mode === "locked" ? current : centerPerson;
   const url = shownPerson ? profileUrl(shownPerson.handle) : "#";
 
+  // ✅ показываем подсказки только ДО первого спина, и не показываем в locked
   const showHints = !hasSpun && mode !== "locked";
 
   return (
     <>
-      <div className="texture" aria-hidden="true" />
-      <canvas ref={canvasRef} id="confetti" aria-hidden="true" />
+      <div className="texture" aria-hidden="true"></div>
+      <canvas ref={canvasRef} id="confetti" aria-hidden="true"></canvas>
 
       {!ready && (
         <div className="loadingOverlay" aria-label="Loading avatars">
@@ -465,9 +474,10 @@ export default function HomePage() {
           >
             <div className="congratsText">Congratulations</div>
 
+            {/* ✅ До первого спина: сверху Spin..., снизу Spinning... */}
             {showHints && (
               <div className="carouselHintTop">
-                Spinning through the most based builders on X
+                Spin to find which one you’re most based as
               </div>
             )}
 
@@ -526,15 +536,16 @@ export default function HomePage() {
                 })}
               </div>
 
-              <div className="bigReelMask" aria-hidden="true" />
+              <div className="bigReelMask" aria-hidden="true"></div>
             </div>
 
             {showHints && (
               <div className="carouselHintBottom">
-                Spin to find which one you’re most based as
+                Spinning through the most based builders on X
               </div>
             )}
 
+            {/* ✅ В locked показываем только основной блок результата (без дублей) */}
             {mode === "locked" && shownPerson && (
               <div className="meta">
                 <a className="handleLink" href={url} target="_blank" rel="noreferrer">
@@ -636,6 +647,7 @@ export default function HomePage() {
           z-index: 25;
         }
 
+        /* Loader */
         .loadingOverlay{
           position:fixed;
           inset:0;
@@ -730,22 +742,22 @@ export default function HomePage() {
         }
         .stage.celebrate .congratsText{ opacity: 1; }
 
-        /* ✅ TOP = info (caps) | BOTTOM = CTA (normal) */
+        /* Copy around carousel */
         .carouselHintTop{
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: .1em;
-          text-transform: uppercase;
-          color: rgba(10,10,10,.45);
+          font-size: 14px;
+          color: rgba(10,10,10,.55);
           margin-bottom: 6px;
         }
         .carouselHintBottom{
-          font-size: 14px;
-          font-weight: 500;
-          color: rgba(10,10,10,.6);
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: .08em;
+          text-transform: uppercase;
+          color: rgba(10,10,10,.45);
           margin-top: 6px;
         }
 
+        /* ===== REEL ===== */
         .bigReel{
           width: min(1180px, 96vw);
           height: 270px;
@@ -787,6 +799,7 @@ export default function HomePage() {
             box-shadow .35s ease,
             border-color .35s ease;
         }
+        /* remove jitter while rAF moves */
         .stage.animating .bigTile{ transition: none !important; }
 
         .bigTile img{
@@ -795,12 +808,14 @@ export default function HomePage() {
           object-fit: cover;
           display:block;
         }
+
         .bigTile.winner{
           border-color: rgba(10,10,10,.22);
           box-shadow:
             0 50px 140px rgba(0,0,0,.28),
             0 0 0 3px rgba(0,0,255,.18);
         }
+
         .winnerBadge{
           position:absolute;
           left: 12px;
@@ -815,6 +830,7 @@ export default function HomePage() {
           text-transform: uppercase;
           box-shadow: 0 12px 26px rgba(0,0,0,.16);
         }
+
         .bigReelMask{
           position:absolute;
           inset:0;
@@ -843,7 +859,7 @@ export default function HomePage() {
         .bio{
           margin-top:14px;
           font-size:18px;
-          color: var(--Gamut: var(--muted);
+          color: var(--muted);
           line-height:1.65;
         }
         .basedLine{
@@ -897,6 +913,7 @@ export default function HomePage() {
           box-shadow: 0 10px 26px rgba(0,0,0,.06);
         }
 
+        /* creator badge */
         .creatorBadge{
           position: fixed;
           right: 20px;
