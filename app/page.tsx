@@ -1106,15 +1106,19 @@ export default function HomePage() {
 
   /* 👇 creator badge: В ДВЕ СТРОКИ */
  .creatorBadge{
-    position: static;
+    position: relative;
     width: 100%;
+    margin-top: 16px;
+    padding: 14px 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    margin: 12px auto 0;
-    padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+
     font-size: 12px;
+    color: rgba(10,10,10,.45);
+
+    border-top: 1px solid rgba(10,10,10,.06);
+    background: transparent;
   }
 
   .creatorRow{
