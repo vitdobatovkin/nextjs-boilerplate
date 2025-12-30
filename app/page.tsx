@@ -235,21 +235,21 @@ export default function HomePage() {
 
   // tween: animate phase by a planned distance, easing out to stop on winner
   const tweenRef = useRef<{
-    active: boolean;
-    startPhase: number;
-    endPhase: number;
-    t0: number;
-    dur: number;
-    winnerIndex: number;
-  }>({
-    active: false,
-    startPhase: 0,
-    endPhase: 0,
-    t0: 0,
-    dur: 0,
-    winnerIndex: 0,
-    active: false,
-  } as any);
+  active: boolean;
+  startPhase: number;
+  endPhase: number;
+  t0: number;
+  dur: number;
+  winnerIndex: number;
+}>({
+  active: false,
+  startPhase: 0,
+  endPhase: 0,
+  t0: 0,
+  dur: 0,
+  winnerIndex: 0,
+});
+
 
   const [, forceFrame] = useState(0);
 
