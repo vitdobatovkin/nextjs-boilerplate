@@ -276,7 +276,15 @@ export default function HomePage() {
     }
   }
 
+  function isMobile() {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 560px)").matches;
+  }
+
+
   function playWin() {
+    if (isMobile()) return; // ✅ звук OFF на мобиле
+
     const a = winAudioRef.current;
     if (!a) return;
 
@@ -284,10 +292,9 @@ export default function HomePage() {
       a.pause();
       a.currentTime = 0;
       void a.play();
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
+
 
   // ===== Reel parameters (smaller tiles ~16-18%) =====
   const TILE = 200;
@@ -440,6 +447,7 @@ export default function HomePage() {
   }
 
   async function spin() {
+    if (!isMobile()) unlockAudioOnce();
     unlockAudioOnce(); // ✅ unlock audio on user click
 
     if (!people.length) return;
@@ -1097,15 +1105,16 @@ export default function HomePage() {
   .bio{ font-size:14px; }
 
   /* 👇 creator badge: В ДВЕ СТРОКИ */
-  .creatorBadge{
+ .creatorBadge{
     position: static;
     width: 100%;
     display: flex;
-    flex-direction: column;   /* ключевое */
+    justify-content: space-between;
     align-items: center;
-    gap: 6px;
+    gap: 12px;
     margin: 12px auto 0;
     padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+    font-size: 12px;
   }
 
   .creatorRow{
