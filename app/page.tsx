@@ -1111,27 +1111,29 @@ export default function HomePage() {
   }
 
   /* ===== FOOTER вместо overlay ===== */
-  .creatorBadge {
-    position: relative; /* КЛЮЧЕВОЕ */
-    left: auto;
-    right: auto;
-    bottom: auto;
-    z-index: auto;
+ .creatorBadge {
+  position: sticky;
+  bottom: 0;
 
-    width: min(1240px, 96vw);
-    margin: 18px auto calc(12px + env(safe-area-inset-bottom));
-    padding: 0 18px;
+  width: 100%;
+  margin-top: 12px; /* было 24px */
+  padding: 8px 18px calc(10px + env(safe-area-inset-bottom)); /* было 12px */
 
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 
-    font-size: 12px;
-    line-height: 1;
+  font-size: 12px;
+  line-height: 1;
 
-    pointer-events: auto; /* больше не overlay */
-  }
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(10, 10, 10, 0.08);
+
+  z-index: 10;
+}
+
 
   .creatorRow,
   .baseJoin {
