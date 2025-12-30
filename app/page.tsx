@@ -1091,11 +1091,11 @@ export default function HomePage() {
   .stage{ padding:24px 18px 22px; gap:10px; }
   .actions{ padding:16px 18px; }
 
-  .bigReel{ height: 200px; }
+  .bigReel{ height: 200px; padding: 0 6px;}
   .bigTile{
     width: 132px;
     height: 132px;
-    margin-left: -66px;
+    margin-left: -60px;
     margin-top: -66px;
     border-radius: 30px;
   }
