@@ -218,12 +218,12 @@ export default function HomePage() {
   const [mode, setMode] = useState<Mode>("idle");
   const lastWinnerRef = useRef<Person | null>(null);
 
-  // ===== Reel parameters (reduced ~30%) =====
-  const TILE = 240; // was 340
-  const GAP = 28;
+  // ===== Reel parameters (smaller tiles ~18%) =====
+  const TILE = 200; // was 240 (≈ -16.7%)
+  const GAP = 24; // slightly smaller gap too
   const STEP = TILE + GAP;
 
-  const WINDOW = 9; // can show more now
+  const WINDOW = 9;
   const HALF = Math.floor(WINDOW / 2);
 
   // ===== Continuous phase-based reel =====
@@ -320,11 +320,12 @@ export default function HomePage() {
         }
       }
 
-      if (phasePxRef.current > 1e12)
+      if (phasePxRef.current > 1e12) {
         phasePxRef.current = phasePxRef.current % (len * STEP);
+      }
 
       const baseIndex = Math.floor(phasePxRef.current / STEP);
-      const centerIndex = mod(baseIndex + HALF, len);
+      const centerIndex = mod(baseIndex, len); // ✅ center is baseIndex
 
       if (mode !== "locked") {
         const p = people[centerIndex];
@@ -337,7 +338,6 @@ export default function HomePage() {
         }
       }
 
-      // NOTE: we still re-render every frame for positioning
       forceFrame((x) => (x + 1) % 1_000_000);
     };
 
@@ -363,20 +363,25 @@ export default function HomePage() {
     const startPhase = phasePxRef.current;
     const startBase = Math.floor(startPhase / STEP);
 
-    const currentCenterIndex = mod(startBase + HALF, len);
+    // ✅ center is startBase (NOT + HALF)
+    const currentCenterIndex = mod(startBase, len);
     const forward = mod(winnerIndex - currentCenterIndex, len);
 
     const loops = 2 + ((Math.random() * 3) | 0);
 
-    // ===== SNAP TO CENTER (endPhase strictly multiple of STEP) =====
+    // ===== SNAP TO CENTER =====
     let endBase = startBase + forward;
+    let endPhase = endBase * STEP;
 
-    const snappedCandidatePhase = endBase * STEP;
-    if (snappedCandidatePhase <= startPhase) endBase += 1;
+    // ensure it’s strictly forward (because startPhase may have fractional part)
+    if (endPhase <= startPhase) {
+      endBase += len;
+      endPhase = endBase * STEP;
+    }
 
+    // add extra full loops for drama
     endBase += loops * len;
-
-    const endPhase = endBase * STEP;
+    endPhase = endBase * STEP;
 
     tweenRef.current = {
       active: true,
@@ -439,9 +444,8 @@ export default function HomePage() {
                   const isCenter = i === HALF;
                   const allowClick = mode === "locked" && isCenter && !!current;
 
-                  // Winner emphasis when locked
                   const popScale = allowClick ? 1.12 : 1;
-                  const popY = allowClick ? -18 : 0;
+                  const popY = allowClick ? -16 : 0;
 
                   const opacity =
                     mode === "locked"
@@ -644,7 +648,7 @@ export default function HomePage() {
         /* ===== REEL ===== */
         .bigReel{
           width: min(1180px, 96vw);
-          height: 310px;
+          height: 270px;
           position: relative;
           display:flex;
           align-items:center;
@@ -663,12 +667,12 @@ export default function HomePage() {
           position: absolute;
           top: 50%;
           left: 50%;
-          width: 240px;
-          height: 240px;
-          margin-left: -120px;
-          margin-top: -120px;
+          width: 200px;
+          height: 200px;
+          margin-left: -100px;
+          margin-top: -100px;
 
-          border-radius: 44px;
+          border-radius: 40px;
           overflow:hidden;
           border: 1px solid rgba(10,10,10,.10);
           background: var(--card);
@@ -677,13 +681,13 @@ export default function HomePage() {
           display:block;
           will-change: transform, opacity;
 
-          /* IMPORTANT: transitions are disabled during animation via .stage.animating */
           transition:
             transform .35s cubic-bezier(.2,.8,.2,1),
             opacity .25s ease,
             box-shadow .35s ease,
             border-color .35s ease;
         }
+        /* IMPORTANT: no CSS transitions while animating (prevents jitter) */
         .stage.animating .bigTile{
           transition: none !important;
         }
@@ -705,13 +709,13 @@ export default function HomePage() {
 
         .winnerBadge{
           position:absolute;
-          left: 14px;
-          top: 14px;
-          padding: 8px 10px;
+          left: 12px;
+          top: 12px;
+          padding: 7px 9px;
           border-radius: 999px;
           background: rgba(0,0,255,.95);
           color: #fff;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 950;
           letter-spacing: .12em;
           text-transform: uppercase;
@@ -858,14 +862,14 @@ export default function HomePage() {
           .stage{ padding:24px 18px 22px; gap:12px; }
           .actions{ padding:16px 18px; }
 
-          .bigReel{ height: 220px; }
+          .bigReel{ height: 200px; }
 
           .bigTile{
-            width: 160px;
-            height: 160px;
-            margin-left: -80px;
-            margin-top: -80px;
-            border-radius: 34px;
+            width: 132px;   /* was 160 */
+            height: 132px;
+            margin-left: -66px;
+            margin-top: -66px;
+            border-radius: 30px;
           }
 
           .handleLink{ font-size:26px; }
