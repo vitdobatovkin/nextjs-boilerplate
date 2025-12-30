@@ -237,8 +237,6 @@ export default function HomePage() {
   // loader gate
   const [ready, setReady] = useState(false);
 
-  // ✅ показать подсказки только ДО первого спина
-  const [hasSpun, setHasSpun] = useState(false);
 
   const lastWinnerRef = useRef<Person | null>(null);
 
@@ -414,7 +412,6 @@ export default function HomePage() {
           setCelebrate(true);
           setSpinning(false);
           setMode("locked");
-          setHasSpun(true); // ✅ после первого результата скрываем подсказки навсегда
           launch();
           playWin(); // ✅ WIN SOUND
 
@@ -516,7 +513,8 @@ export default function HomePage() {
   const url = shownPerson ? profileUrl(shownPerson.handle) : "#";
 
   // ✅ показываем подсказки только ДО первого спина, и не показываем в locked
-  const showHints = !hasSpun && mode !== "locked";
+ const showHints = mode !== "locked";
+
 
   return (
     <>
@@ -1109,7 +1107,7 @@ export default function HomePage() {
     position: relative;
     width: 100%;
     margin-top: 16px;
-    padding: 14px 18px;
+    padding: 14px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1123,6 +1121,7 @@ export default function HomePage() {
 
   .creatorRow{
     justify-content: center;
+    margin-left: 4px;
   }
 
   .baseJoin{
