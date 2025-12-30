@@ -1095,7 +1095,7 @@ export default function HomePage() {
   .bigTile{
     width: 132px;
     height: 132px;
-    margin-left: -60px;
+    margin-left: -56px;
     margin-top: -66px;
     border-radius: 30px;
   }
