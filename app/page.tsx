@@ -62,10 +62,11 @@ function buildSharePageUrl(winner: { handle: string; bio?: string }) {
 
 function buildXIntentUrl(winner: { handle: string; bio?: string }) {
   const sharePageUrl = buildSharePageUrl(winner);
+
   const text =
-  `I’m based as ${winner.handle} 🟦\n` +
-  `How based are you in 2026?\n\n` +
-  `Try yourself: https://based-me.vercel.app`;
+    `I’m based as ${winner.handle} 🟦\n` +
+    `How based are you in 2026?\n\n` +
+    `Try yourself: https://based-me.vercel.app`;
 
   const intent = new URL("https://x.com/intent/post");
   intent.searchParams.set("text", text);
@@ -241,6 +242,53 @@ export default function HomePage() {
 
   const lastWinnerRef = useRef<Person | null>(null);
 
+  // ===== WIN SOUND =====
+  const winAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUnlockedRef = useRef(false);
+
+  function unlockAudioOnce() {
+    if (audioUnlockedRef.current) return;
+    const a = winAudioRef.current;
+    if (!a) return;
+
+    audioUnlockedRef.current = true;
+
+    // warm-up on user gesture (works on iOS/Safari)
+    try {
+      a.currentTime = 0;
+      const p = a.play();
+      if (p && typeof (p as any).then === "function") {
+        (p as Promise<void>)
+          .then(() => {
+            a.pause();
+            a.currentTime = 0;
+          })
+          .catch(() => {
+            // if blocked, try again on the next click
+            audioUnlockedRef.current = false;
+          });
+      } else {
+        a.pause();
+        a.currentTime = 0;
+      }
+    } catch {
+      audioUnlockedRef.current = false;
+    }
+  }
+
+  function playWin() {
+    const a = winAudioRef.current;
+    if (!a) return;
+
+    try {
+      a.pause();
+      a.currentTime = 0;
+      void a.play();
+    } catch {
+      // ignore
+    }
+  }
+
   // ===== Reel parameters (smaller tiles ~16-18%) =====
   const TILE = 200;
   const GAP = 24;
@@ -274,6 +322,18 @@ export default function HomePage() {
 
   useEffect(() => {
     preloadOnce("/avatars/default.png").then(() => {});
+  }, []);
+
+  // init win sound
+  useEffect(() => {
+    const a = new Audio("/sfx/win.wav"); // ✅ your file: public/sfx/win.wav
+    a.preload = "auto";
+    a.volume = 0.85;
+    winAudioRef.current = a;
+
+    return () => {
+      winAudioRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -349,6 +409,7 @@ export default function HomePage() {
           setMode("locked");
           setHasSpun(true); // ✅ после первого результата скрываем подсказки навсегда
           launch();
+          playWin(); // ✅ WIN SOUND
 
           stopLoop();
           return;
@@ -379,6 +440,8 @@ export default function HomePage() {
   }
 
   async function spin() {
+    unlockAudioOnce(); // ✅ unlock audio on user click
+
     if (!people.length) return;
     if (!ready) return;
     if (spinning) return;
