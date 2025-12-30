@@ -461,7 +461,7 @@ export default function HomePage() {
           <div className="tag">2026 EDITION</div>
           <h1>How based are you in 2026?</h1>
           <p className="sub">
-            Tap <b>Based me</b> — quick spin, and we’ll rate how based you are.
+            Tap <b>Base me</b> — quick spin, and we’ll rate how based you are.
           </p>
         </div>
 
@@ -474,10 +474,10 @@ export default function HomePage() {
           >
             <div className="congratsText">Congratulations</div>
 
-            {/* ✅ До первого спина: сверху Spin..., снизу Spinning... */}
+            {/* ✅ ВВЕРХУ (КАПС): Spinning through... */}
             {showHints && (
               <div className="carouselHintTop">
-                Spin to find which one you’re most based as
+                Spinning through the most based builders on X
               </div>
             )}
 
@@ -492,7 +492,8 @@ export default function HomePage() {
                   const dist = Math.abs(x) / STEP;
 
                   const isCenter = i === HALF;
-                  const allowClick = mode === "locked" && isCenter && !!shownPerson;
+                  const allowClick =
+                    mode === "locked" && isCenter && !!shownPerson;
 
                   const popScale = allowClick ? 1.12 : 1;
                   const popY = allowClick ? -16 : 0;
@@ -539,16 +540,22 @@ export default function HomePage() {
               <div className="bigReelMask" aria-hidden="true"></div>
             </div>
 
+            {/* ✅ СНИЗУ (НЕ КАПС): Spin to find... */}
             {showHints && (
               <div className="carouselHintBottom">
-                Spinning through the most based builders on X
+                Spin to find which one you’re most based as
               </div>
             )}
 
             {/* ✅ В locked показываем только основной блок результата (без дублей) */}
             {mode === "locked" && shownPerson && (
               <div className="meta">
-                <a className="handleLink" href={url} target="_blank" rel="noreferrer">
+                <a
+                  className="handleLink"
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   {shownPerson.handle}
                 </a>
                 <div className="bio">{shownPerson.bio || ""}</div>
@@ -568,8 +575,12 @@ export default function HomePage() {
 
           <div className="actions">
             <div className="btns">
-              <button className="primary" onClick={spin} disabled={!people.length || !ready}>
-                {!ready ? "Loading…" : spinning ? "Spinning…" : "Based me"}
+              <button
+                className="primary"
+                onClick={spin}
+                disabled={!people.length || !ready}
+              >
+                {!ready ? "Loading…" : spinning ? "Spinning…" : "Base me"}
               </button>
 
               <button
@@ -620,162 +631,187 @@ export default function HomePage() {
           --blue: #0000ff;
           --card: #ffffff;
         }
-        * { box-sizing: border-box; }
-        html, body { height: 100%; }
+        * {
+          box-sizing: border-box;
+        }
+        html,
+        body {
+          height: 100%;
+        }
         body {
           margin: 0;
-          font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+          font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+            Arial;
           background: var(--bg);
           color: var(--text);
           overflow-x: hidden;
         }
-        .texture{
-          position:fixed; inset:0;
-          pointer-events:none;
-          background:
-            radial-gradient(900px 520px at 62% 12%, rgba(10,71,255,.08), transparent 65%),
-            repeating-linear-gradient(90deg, rgba(0,0,0,.035) 0 1px, transparent 1px 6px);
-          opacity:.55;
-          mix-blend-mode:multiply;
+        .texture {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          background: radial-gradient(
+              900px 520px at 62% 12%,
+              rgba(10, 71, 255, 0.08),
+              transparent 65%
+            ),
+            repeating-linear-gradient(
+              90deg,
+              rgba(0, 0, 0, 0.035) 0 1px,
+              transparent 1px 6px
+            );
+          opacity: 0.55;
+          mix-blend-mode: multiply;
         }
-        #confetti{
-          position:fixed;
-          inset:0;
-          width:100vw;
-          height:100vh;
-          pointer-events:none;
+        #confetti {
+          position: fixed;
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
+          pointer-events: none;
           z-index: 25;
         }
 
         /* Loader */
-        .loadingOverlay{
-          position:fixed;
-          inset:0;
+        .loadingOverlay {
+          position: fixed;
+          inset: 0;
           z-index: 60;
-          display:flex;
-          flex-direction:column;
-          align-items:center;
-          justify-content:center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
           gap: 12px;
-          background: rgba(255,255,255,.78);
+          background: rgba(255, 255, 255, 0.78);
           backdrop-filter: blur(6px);
         }
-        .spinner{
+        .spinner {
           width: 44px;
           height: 44px;
           border-radius: 999px;
-          border: 3px solid rgba(10,10,10,.12);
-          border-top-color: rgba(0,0,255,.85);
+          border: 3px solid rgba(10, 10, 10, 0.12);
+          border-top-color: rgba(0, 0, 255, 0.85);
           animation: spin 0.9s linear infinite;
         }
-        .loadingText{
+        .loadingText {
           font-size: 13px;
-          color: rgba(10,10,10,.65);
+          color: rgba(10, 10, 10, 0.65);
           font-weight: 700;
-          letter-spacing: .01em;
+          letter-spacing: 0.01em;
         }
-        @keyframes spin{ to { transform: rotate(360deg); } }
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
 
-        .wrap{
-          min-height:100%;
-          display:grid;
-          place-items:center;
+        .wrap {
+          min-height: 100%;
+          display: grid;
+          place-items: center;
           padding: 28px 18px 44px;
         }
-        .hero{
-          width:min(980px, 100%);
+        .hero {
+          width: min(980px, 100%);
           margin-bottom: 18px;
         }
-        .tag{
+        .tag {
           font-size: 12px;
-          letter-spacing: .12em;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: rgba(10,10,10,.55);
+          color: rgba(10, 10, 10, 0.55);
           margin-bottom: 10px;
-          text-align:center;
+          text-align: center;
         }
-        h1{
-          margin:0;
+        h1 {
+          margin: 0;
           font-size: clamp(40px, 4.6vw, 72px);
-          line-height: .94;
-          letter-spacing: -.03em;
+          line-height: 0.94;
+          letter-spacing: -0.03em;
           font-weight: 900;
-          text-align:center;
+          text-align: center;
         }
-        .sub{
+        .sub {
           margin: 12px auto 0;
           max-width: 75ch;
           color: var(--muted);
           font-size: 14px;
           line-height: 1.45;
-          text-align:center;
+          text-align: center;
         }
-        .panel{
+        .panel {
           width: min(1240px, 96vw);
           margin: 44px auto 0;
-          border:1px solid var(--line);
-          border-radius:32px;
-          background:#fff;
-          overflow:hidden;
-          box-shadow: 0 26px 80px rgba(0,0,0,.10);
-          position:relative;
+          border: 1px solid var(--line);
+          border-radius: 32px;
+          background: #fff;
+          overflow: hidden;
+          box-shadow: 0 26px 80px rgba(0, 0, 0, 0.1);
+          position: relative;
         }
-        .stage{
-          display:flex;
+        .stage {
+          display: flex;
           flex-direction: column;
-          align-items:center;
-          justify-content:center;
+          align-items: center;
+          justify-content: center;
           gap: 12px;
           padding: 54px 72px 46px;
-          text-align:center;
-          position:relative;
+          text-align: center;
+          position: relative;
         }
-        .congratsText{
+        .congratsText {
           font-size: 12px;
           font-weight: 800;
-          letter-spacing: .12em;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: rgba(10,10,10,.55);
+          color: rgba(10, 10, 10, 0.55);
           height: 18px;
           opacity: 0;
-          transition: opacity .18s ease;
+          transition: opacity 0.18s ease;
         }
-        .stage.celebrate .congratsText{ opacity: 1; }
+        .stage.celebrate .congratsText {
+          opacity: 1;
+        }
 
         /* Copy around carousel */
-        .carouselHintTop{
-          font-size: 14px;
-          color: rgba(10,10,10,.55);
-          margin-bottom: 6px;
-        }
-        .carouselHintBottom{
+        /* TOP: CAPS */
+        .carouselHintTop {
           font-size: 13px;
           font-weight: 700;
-          letter-spacing: .08em;
+          letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: rgba(10,10,10,.45);
+          color: rgba(10, 10, 10, 0.45);
+          margin-bottom: 6px;
+        }
+        /* BOTTOM: NOT CAPS */
+        .carouselHintBottom {
+          font-size: 14px;
+          color: rgba(10, 10, 10, 0.55);
           margin-top: 6px;
+          letter-spacing: normal;
+          text-transform: none;
+          font-weight: 500;
         }
 
         /* ===== REEL ===== */
-        .bigReel{
+        .bigReel {
           width: min(1180px, 96vw);
           height: 270px;
           position: relative;
-          display:flex;
-          align-items:center;
-          justify-content:center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-        .bigReelTrack{
+        .bigReelTrack {
           position: relative;
           width: 100%;
           height: 100%;
           overflow: hidden;
-          display:flex;
-          align-items:center;
-          justify-content:center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-        .bigTile{
+        .bigTile {
           position: absolute;
           top: 50%;
           left: 50%;
@@ -785,136 +821,143 @@ export default function HomePage() {
           margin-top: -100px;
 
           border-radius: 40px;
-          overflow:hidden;
-          border: 1px solid rgba(10,10,10,.10);
+          overflow: hidden;
+          border: 1px solid rgba(10, 10, 10, 0.1);
           background: var(--card);
-          box-shadow: 0 18px 52px rgba(0,0,0,.08);
+          box-shadow: 0 18px 52px rgba(0, 0, 0, 0.08);
 
-          display:block;
+          display: block;
           will-change: transform, opacity;
 
-          transition:
-            transform .35s cubic-bezier(.2,.8,.2,1),
-            opacity .25s ease,
-            box-shadow .35s ease,
-            border-color .35s ease;
+          transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+            opacity 0.25s ease, box-shadow 0.35s ease,
+            border-color 0.35s ease;
         }
         /* remove jitter while rAF moves */
-        .stage.animating .bigTile{ transition: none !important; }
+        .stage.animating .bigTile {
+          transition: none !important;
+        }
 
-        .bigTile img{
-          width:100%;
-          height:100%;
+        .bigTile img {
+          width: 100%;
+          height: 100%;
           object-fit: cover;
-          display:block;
+          display: block;
         }
 
-        .bigTile.winner{
-          border-color: rgba(10,10,10,.22);
-          box-shadow:
-            0 50px 140px rgba(0,0,0,.28),
-            0 0 0 3px rgba(0,0,255,.18);
+        .bigTile.winner {
+          border-color: rgba(10, 10, 10, 0.22);
+          box-shadow: 0 50px 140px rgba(0, 0, 0, 0.28),
+            0 0 0 3px rgba(0, 0, 255, 0.18);
         }
 
-        .winnerBadge{
-          position:absolute;
+        .winnerBadge {
+          position: absolute;
           left: 12px;
           top: 12px;
           padding: 7px 9px;
           border-radius: 999px;
-          background: rgba(0,0,255,.95);
+          background: rgba(0, 0, 255, 0.95);
           color: #fff;
           font-size: 10px;
           font-weight: 950;
-          letter-spacing: .12em;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
-          box-shadow: 0 12px 26px rgba(0,0,0,.16);
+          box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16);
         }
 
-        .bigReelMask{
-          position:absolute;
-          inset:0;
-          pointer-events:none;
+        .bigReelMask {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
           border-radius: 28px;
-          background:
-            linear-gradient(90deg,
-              rgba(255,255,255,.94),
-              rgba(255,255,255,0) 22%,
-              rgba(255,255,255,0) 78%,
-              rgba(255,255,255,.94)
-            );
-          opacity: .68;
+          background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.94),
+            rgba(255, 255, 255, 0) 22%,
+            rgba(255, 255, 255, 0) 78%,
+            rgba(255, 255, 255, 0.94)
+          );
+          opacity: 0.68;
         }
 
-        .meta{ margin-top: 10px; }
-        .handleLink{
-          display:inline-block;
-          text-decoration:none;
+        .meta {
+          margin-top: 10px;
+        }
+        .handleLink {
+          display: inline-block;
+          text-decoration: none;
           color: var(--text);
           font-size: 44px;
           font-weight: 950;
           letter-spacing: -0.04em;
           line-height: 1.02;
         }
-        .bio{
-          margin-top:14px;
-          font-size:18px;
+        .bio {
+          margin-top: 14px;
+          font-size: 18px;
           color: var(--muted);
-          line-height:1.65;
+          line-height: 1.65;
         }
-        .basedLine{
+        .basedLine {
           margin-top: 10px;
           font-size: 14px;
-          color: rgba(10,10,10,.55);
+          color: rgba(10, 10, 10, 0.55);
         }
-        .basedLine a{
-          color: rgba(10,10,10,.85);
-          text-decoration:none;
+        .basedLine a {
+          color: rgba(10, 10, 10, 0.85);
+          text-decoration: none;
           font-weight: 950;
-          border-bottom:1px solid rgba(10,10,10,.18);
+          border-bottom: 1px solid rgba(10, 10, 10, 0.18);
         }
-        .spacer{ height: 1px; }
+        .spacer {
+          height: 1px;
+        }
 
-        .actions{
-          display:flex;
-          padding:24px 72px 28px;
-          border-top:1px solid var(--line);
-          background: rgba(246,247,248,.55);
-          justify-content:center;
-          align-items:center;
+        .actions {
+          display: flex;
+          padding: 24px 72px 28px;
+          border-top: 1px solid var(--line);
+          background: rgba(246, 247, 248, 0.55);
+          justify-content: center;
+          align-items: center;
         }
-        .btns{
-          display:flex;
-          justify-content:center;
-          align-items:center;
-          width:100%;
-          gap:12px;
-          flex-wrap:wrap;
+        .btns {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+          gap: 12px;
+          flex-wrap: wrap;
         }
-        button{
-          border:1px solid transparent;
-          border-radius:16px;
-          padding:14px 22px;
-          font-weight:950;
-          cursor:pointer;
-          font-size:16px;
+        button {
+          border: 1px solid transparent;
+          border-radius: 16px;
+          padding: 14px 22px;
+          font-weight: 950;
+          cursor: pointer;
+          font-size: 16px;
           letter-spacing: -0.01em;
         }
-        .primary{
+        .primary {
           background: var(--blue);
-          color:#fff;
-          box-shadow: 0 14px 34px rgba(10,71,255,.22);
+          color: #fff;
+          box-shadow: 0 14px 34px rgba(10, 71, 255, 0.22);
         }
-        .primary:disabled{ opacity:.6; cursor:not-allowed; box-shadow:none; }
-        .share{
-          background:#fff;
+        .primary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+        .share {
+          background: #fff;
           color: var(--text);
-          border:1px solid rgba(10,10,10,.14);
-          box-shadow: 0 10px 26px rgba(0,0,0,.06);
+          border: 1px solid rgba(10, 10, 10, 0.14);
+          box-shadow: 0 10px 26px rgba(0, 0, 0, 0.06);
         }
 
         /* creator badge */
-        .creatorBadge{
+        .creatorBadge {
           position: fixed;
           right: 20px;
           bottom: 18px;
@@ -925,54 +968,69 @@ export default function HomePage() {
           font-size: 13px;
           line-height: 1;
         }
-        .creatorRow{
+        .creatorRow {
           display: flex;
           align-items: center;
           gap: 8px;
           text-decoration: none;
-          color: rgba(10,10,10,.55);
+          color: rgba(10, 10, 10, 0.55);
         }
-        .creatorRow:hover{ color: rgba(10,10,10,.85); }
-        .creatorAvatar{
+        .creatorRow:hover {
+          color: rgba(10, 10, 10, 0.85);
+        }
+        .creatorAvatar {
           width: 22px;
           height: 22px;
           border-radius: 999px;
           object-fit: cover;
         }
-        .creatorRow b{
+        .creatorRow b {
           font-weight: 800;
-          color: rgba(10,10,10,.75);
+          color: rgba(10, 10, 10, 0.75);
         }
-        .baseJoin{
+        .baseJoin {
           position: relative;
           padding-left: 14px;
           text-decoration: none;
           font-size: 13px;
           font-weight: 600;
-          color: rgba(10,10,10,.45);
+          color: rgba(10, 10, 10, 0.45);
         }
-        .baseJoin::before{
+        .baseJoin::before {
           content: "·";
           position: absolute;
           left: 4px;
-          color: rgba(10,10,10,.35);
+          color: rgba(10, 10, 10, 0.35);
         }
-        .baseJoin:hover{ color: rgba(10,10,10,.8); }
+        .baseJoin:hover {
+          color: rgba(10, 10, 10, 0.8);
+        }
 
-        @media (max-width: 560px){
-          .stage{ padding:24px 18px 22px; gap:10px; }
-          .actions{ padding:16px 18px; }
-          .bigReel{ height: 200px; }
-          .bigTile{
+        @media (max-width: 560px) {
+          .stage {
+            padding: 24px 18px 22px;
+            gap: 10px;
+          }
+          .actions {
+            padding: 16px 18px;
+          }
+          .bigReel {
+            height: 200px;
+          }
+          .bigTile {
             width: 132px;
             height: 132px;
             margin-left: -66px;
             margin-top: -66px;
             border-radius: 30px;
           }
-          .handleLink{ font-size:26px; }
-          .bio{ font-size:14px; }
-          .creatorBadge{
+          .handleLink {
+            font-size: 26px;
+          }
+          .bio {
+            font-size: 14px;
+          }
+          .creatorBadge {
             right: 14px;
             bottom: 12px;
             font-size: 12px;
