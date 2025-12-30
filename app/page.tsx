@@ -1078,7 +1078,6 @@ export default function HomePage() {
   }
   .hero{ margin-bottom: 10px; }
 
-  /* было: margin: 44px auto 0; -> уменьшаем большой отступ сверху */
   .panel{
     margin: 18px auto 0;
   }
@@ -1097,23 +1096,25 @@ export default function HomePage() {
   .handleLink{ font-size:26px; }
   .bio{ font-size:14px; }
 
-  /* фикс: чтобы 0x_mura не залезал на кнопки/разметку на iOS */
+  /* 👇 creator badge: В ДВЕ СТРОКИ */
   .creatorBadge{
     position: static;
     width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
+    display: flex;
+    flex-direction: column;   /* ключевое */
+    align-items: center;
+    gap: 6px;
     margin: 12px auto 0;
     padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
   }
 
   .creatorRow{
-    gap: 8px;
+    justify-content: center;
   }
 
   .baseJoin{
     padding-left: 0;
+    font-size: 13px;
   }
   .baseJoin::before{
     display: none;
