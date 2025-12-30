@@ -320,7 +320,8 @@ export default function HomePage() {
         }
       }
 
-      if (phasePxRef.current > 1e12) phasePxRef.current = phasePxRef.current % (len * STEP);
+      if (phasePxRef.current > 1e12)
+        phasePxRef.current = phasePxRef.current % (len * STEP);
 
       const baseIndex = Math.floor(phasePxRef.current / STEP);
       const centerIndex = mod(baseIndex + HALF, len);
@@ -336,6 +337,7 @@ export default function HomePage() {
         }
       }
 
+      // NOTE: we still re-render every frame for positioning
       forceFrame((x) => (x + 1) % 1_000_000);
     };
 
@@ -363,10 +365,18 @@ export default function HomePage() {
 
     const currentCenterIndex = mod(startBase + HALF, len);
     const forward = mod(winnerIndex - currentCenterIndex, len);
-    const loops = 2 + ((Math.random() * 3) | 0);
-    const steps = loops * len + forward;
 
-    const endPhase = startPhase + steps * STEP;
+    const loops = 2 + ((Math.random() * 3) | 0);
+
+    // ===== SNAP TO CENTER (endPhase strictly multiple of STEP) =====
+    let endBase = startBase + forward;
+
+    const snappedCandidatePhase = endBase * STEP;
+    if (snappedCandidatePhase <= startPhase) endBase += 1;
+
+    endBase += loops * len;
+
+    const endPhase = endBase * STEP;
 
     tweenRef.current = {
       active: true,
@@ -408,7 +418,12 @@ export default function HomePage() {
         </div>
 
         <section className="panel" aria-label="Based generator">
-          <div className={`stage ${celebrate ? "celebrate" : ""}`} aria-live="polite">
+          <div
+            className={`stage ${celebrate ? "celebrate" : ""} ${
+              mode !== "locked" ? "animating" : ""
+            }`}
+            aria-live="polite"
+          >
             <div className="congratsText">Congratulations</div>
 
             <div className="bigReel" aria-label="reel">
@@ -419,7 +434,6 @@ export default function HomePage() {
                   const p = people[idx];
 
                   const x = (i - HALF) * STEP + offset;
-
                   const dist = Math.abs(x) / STEP;
 
                   const isCenter = i === HALF;
@@ -458,9 +472,11 @@ export default function HomePage() {
                         src={localAvatarSrc(p?.handle)}
                         loading="eager"
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = "/avatars/default.png";
+                          (e.currentTarget as HTMLImageElement).src =
+                            "/avatars/default.png";
                         }}
                       />
+                      {allowClick && <div className="winnerBadge">WINNER</div>}
                     </a>
                   );
                 })}
@@ -660,12 +676,18 @@ export default function HomePage() {
 
           display:block;
           will-change: transform, opacity;
+
+          /* IMPORTANT: transitions are disabled during animation via .stage.animating */
           transition:
             transform .35s cubic-bezier(.2,.8,.2,1),
             opacity .25s ease,
             box-shadow .35s ease,
             border-color .35s ease;
         }
+        .stage.animating .bigTile{
+          transition: none !important;
+        }
+
         .bigTile img{
           width:100%;
           height:100%;
@@ -673,12 +695,27 @@ export default function HomePage() {
           display:block;
         }
 
-        /* Stronger winner highlight (no center frame) */
+        /* Winner highlight */
         .bigTile.winner{
+          border-color: rgba(10,10,10,.22);
           box-shadow:
-            0 40px 110px rgba(0,0,0,.22),
-            0 0 0 2px rgba(0,0,0,.06);
-          border-color: rgba(10,10,10,.16);
+            0 50px 140px rgba(0,0,0,.28),
+            0 0 0 3px rgba(0,0,255,.18);
+        }
+
+        .winnerBadge{
+          position:absolute;
+          left: 14px;
+          top: 14px;
+          padding: 8px 10px;
+          border-radius: 999px;
+          background: rgba(0,0,255,.95);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 950;
+          letter-spacing: .12em;
+          text-transform: uppercase;
+          box-shadow: 0 12px 26px rgba(0,0,0,.16);
         }
 
         .bigReelMask{
