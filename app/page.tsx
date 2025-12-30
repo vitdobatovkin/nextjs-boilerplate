@@ -1079,12 +1079,13 @@ export default function HomePage() {
           color: rgba(10, 10, 10, 0.8);
         }
 
-        /* ✅ Откат мобильных отступов между карточками: как было раньше */
-        @media (max-width: 560px) {
+@media (max-width: 768px) {
+  /* ===== общий мобильный лейаут ===== */
   .stage {
     padding: 24px 18px 22px;
     gap: 10px;
   }
+
   .actions {
     padding: 16px 18px;
   }
@@ -1092,6 +1093,7 @@ export default function HomePage() {
   .bigReel {
     height: 200px;
   }
+
   .bigTile {
     width: 132px;
     height: 132px;
@@ -1103,17 +1105,22 @@ export default function HomePage() {
   .handleLink {
     font-size: 26px;
   }
+
   .bio {
     font-size: 14px;
   }
 
-  /* ✅ футер: слева Mura, справа Join Base App */
+  /* ===== FOOTER вместо overlay ===== */
   .creatorBadge {
-    position: fixed;
-    left: 14px;
-    right: 14px;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    z-index: 40;
+    position: relative; /* КЛЮЧЕВОЕ */
+    left: auto;
+    right: auto;
+    bottom: auto;
+    z-index: auto;
+
+    width: min(1240px, 96vw);
+    margin: 18px auto calc(12px + env(safe-area-inset-bottom));
+    padding: 0 18px;
 
     display: flex;
     justify-content: space-between;
@@ -1122,20 +1129,14 @@ export default function HomePage() {
 
     font-size: 12px;
     line-height: 1;
-    pointer-events: none; /* чтобы не блокировал клики по контенту */
+
+    pointer-events: auto; /* больше не overlay */
   }
 
   .creatorRow,
   .baseJoin {
-    pointer-events: auto; /* ссылки кликабельны */
-  }
-
-  .creatorRow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    color: rgba(10, 10, 10, 0.55);
+    white-space: nowrap;
+    flex: 0 0 auto;
   }
 
   .creatorAvatar {
@@ -1144,21 +1145,21 @@ export default function HomePage() {
   }
 
   .baseJoin {
-    text-decoration: none;
+    padding-left: 0;
     font-weight: 600;
     color: rgba(10, 10, 10, 0.45);
-    padding-left: 0;
   }
 
   .baseJoin::before {
     display: none;
   }
 
-  /* ✅ чтобы футер не налезал на кнопки/нижний контент */
+  /* футер больше не налезает — хак не нужен */
   .wrap {
-    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+    padding-bottom: 44px;
   }
 }
+
 
       `}</style>
     </>
