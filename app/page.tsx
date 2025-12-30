@@ -38,6 +38,15 @@ function localAvatarSrc(handle?: string) {
   return `/avatars/${handleToSlug(handle)}.png`;
 }
 
+function avatarSrc(p?: Person | null) {
+  // Если в RAW_PARTICIPANTS есть p.image (URL или /path) — используем его.
+  // Иначе — локальный файл по handle.
+  if (!p) return "/avatars/default.png";
+  const img = (p.image || "").trim();
+  if (img) return img;
+  return localAvatarSrc(p.handle);
+}
+
 function profileUrl(handle: string) {
   return `https://x.com/${handle.replace(/^@/, "")}`;
 }
@@ -51,12 +60,6 @@ function buildSharePageUrl(winner: { handle: string; bio?: string }) {
   u.searchParams.set("v", String(Date.now()));
 
   return u.toString();
-}
-
-function preload(src: string) {
-  const img = new Image();
-  img.decoding = "async";
-  img.src = src;
 }
 
 function buildXIntentUrl(winner: { handle: string; bio?: string }) {
@@ -79,6 +82,16 @@ function clamp(v: number, a: number, b: number) {
 
 function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
+}
+
+function preloadOnce(src: string) {
+  return new Promise<void>((resolve) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => resolve();
+    img.onerror = () => resolve(); // не блокируем, даже если нет файла
+    img.src = src;
+  });
 }
 
 // ===== CONFETTI (fullscreen) =====
@@ -212,15 +225,21 @@ export default function HomePage() {
   const people = useMemo(() => sanitize(RAW_PARTICIPANTS), []);
   const { canvasRef, launch } = useFullscreenConfetti();
 
+  // current — ТОЛЬКО для locked (победитель)
   const [current, setCurrent] = useState<Person | null>(null);
+
   const [celebrate, setCelebrate] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const [mode, setMode] = useState<Mode>("idle");
+
+  // Лоадер: пока не подгрузим стартовые аватарки — не даём жать "Based me"
+  const [ready, setReady] = useState(false);
+
   const lastWinnerRef = useRef<Person | null>(null);
 
-  // ===== Reel parameters (smaller tiles ~18%) =====
-  const TILE = 200; // was 240 (≈ -16.7%)
-  const GAP = 24; // slightly smaller gap too
+  // ===== Reel parameters (smaller tiles ~16-18%) =====
+  const TILE = 200; // было 240
+  const GAP = 24;
   const STEP = TILE + GAP;
 
   const WINDOW = 9;
@@ -250,25 +269,45 @@ export default function HomePage() {
   const [, forceFrame] = useState(0);
 
   useEffect(() => {
-    preload("/avatars/default.png");
+    // дефолт тоже прогреем
+    preloadOnce("/avatars/default.png").then(() => {});
   }, []);
 
   useEffect(() => {
     if (!people.length) return;
 
-    const startIndex = (Math.random() * people.length) | 0;
-    const startFrac = Math.random();
-    phasePxRef.current = (startIndex + startFrac) * STEP;
+    let alive = true;
 
-    for (let d = -18; d <= 18; d++) {
-      const p = people[mod(startIndex + d, people.length)];
-      if (p) preload(localAvatarSrc(p.handle));
-    }
+    (async () => {
+      setReady(false);
 
-    setCurrent(people[startIndex] ?? null);
+      const startIndex = (Math.random() * people.length) | 0;
+      const startFrac = Math.random();
+      phasePxRef.current = (startIndex + startFrac) * STEP;
 
-    startLoop();
-    return () => stopLoop();
+      // Загружаем стартовое окно + запас (чтобы не было "прыжков" от поздних загрузок)
+      const R = 18;
+      const tasks: Promise<void>[] = [];
+      for (let d = -R; d <= R; d++) {
+        const p = people[mod(startIndex + d, people.length)];
+        if (p) tasks.push(preloadOnce(avatarSrc(p)));
+      }
+
+      await Promise.all(tasks);
+
+      if (!alive) return;
+
+      // В locked пока никого, в idle центр берём из вычислений
+      setCurrent(null);
+      setReady(true);
+
+      startLoop();
+    })();
+
+    return () => {
+      alive = false;
+      stopLoop();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people.length]);
 
@@ -303,6 +342,8 @@ export default function HomePage() {
 
           const winner = people[tw.winnerIndex];
           lastWinnerRef.current = winner ?? null;
+
+          // фиксируем победителя в state, и дальше UI берёт данные строго отсюда
           setCurrent(winner ?? null);
 
           setCelebrate(true);
@@ -324,20 +365,18 @@ export default function HomePage() {
         phasePxRef.current = phasePxRef.current % (len * STEP);
       }
 
+      // preload вокруг центра (без setState, чтобы не было рассинхрона)
       const baseIndex = Math.floor(phasePxRef.current / STEP);
-      const centerIndex = mod(baseIndex, len); // ✅ center is baseIndex
-
-      if (mode !== "locked") {
-        const p = people[centerIndex];
-        if (p && p.handle !== current?.handle) {
-          setCurrent(p);
-          for (let d = -18; d <= 18; d++) {
-            const pp = people[mod(centerIndex + d, len)];
-            if (pp) preload(localAvatarSrc(pp.handle));
-          }
+      const centerIndex = mod(baseIndex, len);
+      for (let d = -12; d <= 12; d++) {
+        const pp = people[mod(centerIndex + d, len)];
+        if (pp) {
+          // fire-and-forget
+          preloadOnce(avatarSrc(pp)).then(() => {});
         }
       }
 
+      // перерисовка позиций
       forceFrame((x) => (x + 1) % 1_000_000);
     };
 
@@ -346,40 +385,42 @@ export default function HomePage() {
 
   async function spin() {
     if (!people.length) return;
+    if (!ready) return;
     if (spinning) return;
 
     setSpinning(true);
     setCelebrate(false);
     setMode("spinning");
     lastWinnerRef.current = null;
+    setCurrent(null); // сброс, пока крутится
 
     startLoop();
 
     const len = people.length;
     const winnerIndex = (Math.random() * len) | 0;
     const winner = people[winnerIndex];
-    if (winner) preload(localAvatarSrc(winner.handle));
+    if (winner) preloadOnce(avatarSrc(winner)).then(() => {});
 
     const startPhase = phasePxRef.current;
     const startBase = Math.floor(startPhase / STEP);
 
-    // ✅ center is startBase (NOT + HALF)
+    // ВАЖНО: центр в рендере = baseIndex (не +HALF)
     const currentCenterIndex = mod(startBase, len);
     const forward = mod(winnerIndex - currentCenterIndex, len);
 
     const loops = 2 + ((Math.random() * 3) | 0);
 
-    // ===== SNAP TO CENTER =====
+    // SNAP: endPhase строго кратен STEP => победитель будет идеально в центре
     let endBase = startBase + forward;
     let endPhase = endBase * STEP;
 
-    // ensure it’s strictly forward (because startPhase may have fractional part)
+    // гарантируем "вперёд" с учётом дробной стартовой позиции
     if (endPhase <= startPhase) {
       endBase += len;
       endPhase = endBase * STEP;
     }
 
-    // add extra full loops for drama
+    // добавляем красивые круги
     endBase += loops * len;
     endPhase = endBase * STEP;
 
@@ -399,8 +440,7 @@ export default function HomePage() {
     window.open(buildXIntentUrl(w), "_blank", "noopener,noreferrer");
   }
 
-  const url = current ? profileUrl(current.handle) : "#";
-
+  // ===== Derive "who is center" directly from phase (NO STATE LAG) =====
   const len = people.length;
   const phase = phasePxRef.current;
 
@@ -408,10 +448,23 @@ export default function HomePage() {
   const fracPx = phase - baseIndex * STEP;
   const offset = -fracPx;
 
+  const centerPerson = len ? people[mod(baseIndex, len)] : null;
+  const shownPerson = mode === "locked" ? current : centerPerson;
+
+  const url = shownPerson ? profileUrl(shownPerson.handle) : "#";
+
   return (
     <>
       <div className="texture" aria-hidden="true"></div>
       <canvas ref={canvasRef} id="confetti" aria-hidden="true"></canvas>
+
+      {/* Loader overlay */}
+      {!ready && (
+        <div className="loadingOverlay" aria-label="Loading avatars">
+          <div className="spinner" />
+          <div className="loadingText">Loading avatars…</div>
+        </div>
+      )}
 
       <div className="wrap">
         <div className="hero">
@@ -442,7 +495,9 @@ export default function HomePage() {
                   const dist = Math.abs(x) / STEP;
 
                   const isCenter = i === HALF;
-                  const allowClick = mode === "locked" && isCenter && !!current;
+
+                  // В locked победитель — это тот, кто стоит в центре (и он же shownPerson)
+                  const allowClick = mode === "locked" && isCenter && !!shownPerson;
 
                   const popScale = allowClick ? 1.12 : 1;
                   const popY = allowClick ? -16 : 0;
@@ -473,11 +528,10 @@ export default function HomePage() {
                     >
                       <img
                         alt={p?.handle || "avatar"}
-                        src={localAvatarSrc(p?.handle)}
+                        src={avatarSrc(p)}
                         loading="eager"
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src =
-                            "/avatars/default.png";
+                          (e.currentTarget as HTMLImageElement).src = "/avatars/default.png";
                         }}
                       />
                       {allowClick && <div className="winnerBadge">WINNER</div>}
@@ -489,17 +543,17 @@ export default function HomePage() {
               <div className="bigReelMask" aria-hidden="true"></div>
             </div>
 
-            {mode === "locked" && current && (
+            {mode === "locked" && shownPerson && (
               <div className="meta">
                 <a className="handleLink" href={url} target="_blank" rel="noreferrer">
-                  {current.handle}
+                  {shownPerson.handle}
                 </a>
-                <div className="bio">{current.bio || ""}</div>
+                <div className="bio">{shownPerson.bio || ""}</div>
                 {celebrate && (
                   <div className="basedLine">
                     You are based as{" "}
                     <a href={url} target="_blank" rel="noreferrer">
-                      {current.handle}
+                      {shownPerson.handle}
                     </a>
                   </div>
                 )}
@@ -511,8 +565,8 @@ export default function HomePage() {
 
           <div className="actions">
             <div className="btns">
-              <button className="primary" onClick={spin} disabled={!people.length}>
-                {spinning ? "Spinning…" : "Based me"}
+              <button className="primary" onClick={spin} disabled={!people.length || !ready}>
+                {!ready ? "Loading…" : spinning ? "Spinning…" : "Based me"}
               </button>
 
               <button
@@ -528,7 +582,12 @@ export default function HomePage() {
       </div>
 
       <div className="creatorBadge">
-        <a href="https://x.com/0x_mura" target="_blank" rel="noreferrer" className="creatorRow">
+        <a
+          href="https://x.com/0x_mura"
+          target="_blank"
+          rel="noreferrer"
+          className="creatorRow"
+        >
           <img
             src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
             alt="0x_mura"
@@ -539,7 +598,12 @@ export default function HomePage() {
           </span>
         </a>
 
-        <a href="https://base.app/invite/muraa/HCR6DPRH" target="_blank" rel="noreferrer" className="baseJoin">
+        <a
+          href="https://base.app/invite/muraa/HCR6DPRH"
+          target="_blank"
+          rel="noreferrer"
+          className="baseJoin"
+        >
           Join Base App
         </a>
       </div>
@@ -579,6 +643,38 @@ export default function HomePage() {
           pointer-events:none;
           z-index: 25;
         }
+
+        /* Loader */
+        .loadingOverlay{
+          position:fixed;
+          inset:0;
+          z-index: 60;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
+          gap: 12px;
+          background: rgba(255,255,255,.78);
+          backdrop-filter: blur(6px);
+        }
+        .spinner{
+          width: 44px;
+          height: 44px;
+          border-radius: 999px;
+          border: 3px solid rgba(10,10,10,.12);
+          border-top-color: rgba(0,0,255,.85);
+          animation: spin 0.9s linear infinite;
+        }
+        .loadingText{
+          font-size: 13px;
+          color: rgba(10,10,10,.65);
+          font-weight: 700;
+          letter-spacing: .01em;
+        }
+        @keyframes spin{
+          to { transform: rotate(360deg); }
+        }
+
         .wrap{
           min-height:100%;
           display:grid;
@@ -687,7 +783,7 @@ export default function HomePage() {
             box-shadow .35s ease,
             border-color .35s ease;
         }
-        /* IMPORTANT: no CSS transitions while animating (prevents jitter) */
+        /* Убираем дергание: никаких transition во время rAF-движения */
         .stage.animating .bigTile{
           transition: none !important;
         }
@@ -699,7 +795,6 @@ export default function HomePage() {
           display:block;
         }
 
-        /* Winner highlight */
         .bigTile.winner{
           border-color: rgba(10,10,10,.22);
           box-shadow:
@@ -865,7 +960,7 @@ export default function HomePage() {
           .bigReel{ height: 200px; }
 
           .bigTile{
-            width: 132px;   /* was 160 */
+            width: 132px;
             height: 132px;
             margin-left: -66px;
             margin-top: -66px;
