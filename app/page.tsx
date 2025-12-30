@@ -41,7 +41,7 @@ function localAvatarSrc(handle?: string) {
 function avatarSrc(p?: Person | null) {
   if (!p) return "/avatars/default.png";
   const img = (p.image || "").trim();
-  if (img) return img; // prefer explicit mapping if present
+  if (img) return img; // prefer explicit mapping
   return localAvatarSrc(p.handle);
 }
 
@@ -87,7 +87,7 @@ function preloadOnce(src: string) {
     const img = new Image();
     img.decoding = "async";
     img.onload = () => resolve();
-    img.onerror = () => resolve(); // don't block on missing/cors
+    img.onerror = () => resolve();
     img.src = src;
   });
 }
@@ -233,6 +233,9 @@ export default function HomePage() {
   // loader gate
   const [ready, setReady] = useState(false);
 
+  // ✅ показать подсказки только ДО первого спина
+  const [hasSpun, setHasSpun] = useState(false);
+
   const lastWinnerRef = useRef<Person | null>(null);
 
   // ===== Reel parameters (smaller tiles ~16-18%) =====
@@ -282,7 +285,7 @@ export default function HomePage() {
       const startFrac = Math.random();
       phasePxRef.current = (startIndex + startFrac) * STEP;
 
-      // Preload an initial window so UI doesn’t “pop”
+      // preload стартового окна
       const R = 18;
       const tasks: Promise<void>[] = [];
       for (let d = -R; d <= R; d++) {
@@ -341,6 +344,7 @@ export default function HomePage() {
           setCelebrate(true);
           setSpinning(false);
           setMode("locked");
+          setHasSpun(true); // ✅ после первого результата скрываем подсказки навсегда
           launch();
 
           stopLoop();
@@ -357,7 +361,7 @@ export default function HomePage() {
         phasePxRef.current = phasePxRef.current % (len * STEP);
       }
 
-      // warm around center (no setState => no mismatch)
+      // preload вокруг центра (без setState)
       const baseIndex = Math.floor(phasePxRef.current / STEP);
       const centerIndex = mod(baseIndex, len);
       for (let d = -12; d <= 12; d++) {
@@ -392,12 +396,12 @@ export default function HomePage() {
     const startPhase = phasePxRef.current;
     const startBase = Math.floor(startPhase / STEP);
 
-    // center in render = baseIndex
+    // центр в рендере = baseIndex
     const currentCenterIndex = mod(startBase, len);
     const forward = mod(winnerIndex - currentCenterIndex, len);
     const loops = 2 + ((Math.random() * 3) | 0);
 
-    // SNAP: endPhase multiple of STEP => perfect center
+    // SNAP: endPhase кратен STEP => победитель строго по центру
     let endBase = startBase + forward;
     let endPhase = endBase * STEP;
 
@@ -437,12 +441,8 @@ export default function HomePage() {
   const shownPerson = mode === "locked" ? current : centerPerson;
   const url = shownPerson ? profileUrl(shownPerson.handle) : "#";
 
-  // ✅ BEST COPY (recommended)
-  const topCopy = "Spinning through the most based builders on X";
-  const bottomCopy =
-    mode === "locked" && shownPerson
-      ? `You’re based as ${shownPerson.handle}`
-      : "Spin to find which one you’re most based as";
+  // ✅ показываем подсказки только ДО первого спина, и не показываем в locked
+  const showHints = !hasSpun && mode !== "locked";
 
   return (
     <>
@@ -474,8 +474,12 @@ export default function HomePage() {
           >
             <div className="congratsText">Congratulations</div>
 
-            {/* ✅ TOP TEXT */}
-            <div className="carouselHintTop">{topCopy}</div>
+            {/* ✅ До первого спина: сверху Spin..., снизу Spinning... */}
+            {showHints && (
+              <div className="carouselHintTop">
+                Spin to find which one you’re most based as
+              </div>
+            )}
 
             <div className="bigReel" aria-label="reel">
               <div className="bigReelTrack" role="presentation">
@@ -535,9 +539,13 @@ export default function HomePage() {
               <div className="bigReelMask" aria-hidden="true"></div>
             </div>
 
-            {/* ✅ BOTTOM TEXT */}
-            <div className="carouselHintBottom">{bottomCopy}</div>
+            {showHints && (
+              <div className="carouselHintBottom">
+                Spinning through the most based builders on X
+              </div>
+            )}
 
+            {/* ✅ В locked показываем только основной блок результата (без дублей) */}
             {mode === "locked" && shownPerson && (
               <div className="meta">
                 <a className="handleLink" href={url} target="_blank" rel="noreferrer">
@@ -589,7 +597,7 @@ export default function HomePage() {
             className="creatorAvatar"
           />
           <span>
-            Created by <b>@0x_mura</b>
+            Created by <b>0x_mura</b>
           </span>
         </a>
 
@@ -666,9 +674,7 @@ export default function HomePage() {
           font-weight: 700;
           letter-spacing: .01em;
         }
-        @keyframes spin{
-          to { transform: rotate(360deg); }
-        }
+        @keyframes spin{ to { transform: rotate(360deg); } }
 
         .wrap{
           min-height:100%;
@@ -719,7 +725,7 @@ export default function HomePage() {
           flex-direction: column;
           align-items:center;
           justify-content:center;
-          gap: 14px;
+          gap: 12px;
           padding: 54px 72px 46px;
           text-align:center;
           position:relative;
@@ -736,19 +742,19 @@ export default function HomePage() {
         }
         .stage.celebrate .congratsText{ opacity: 1; }
 
-        /* ✅ Copy around carousel */
+        /* Copy around carousel */
         .carouselHintTop{
+          font-size: 14px;
+          color: rgba(10,10,10,.55);
+          margin-bottom: 6px;
+        }
+        .carouselHintBottom{
           font-size: 13px;
           font-weight: 700;
           letter-spacing: .08em;
           text-transform: uppercase;
           color: rgba(10,10,10,.45);
-          margin-bottom: 4px;
-        }
-        .carouselHintBottom{
-          font-size: 14px;
-          color: rgba(10,10,10,.55);
-          margin-top: 4px;
+          margin-top: 6px;
         }
 
         /* ===== REEL ===== */
@@ -793,10 +799,8 @@ export default function HomePage() {
             box-shadow .35s ease,
             border-color .35s ease;
         }
-        /* No CSS transitions while rAF moves tiles (prevents jitter) */
-        .stage.animating .bigTile{
-          transition: none !important;
-        }
+        /* remove jitter while rAF moves */
+        .stage.animating .bigTile{ transition: none !important; }
 
         .bigTile img{
           width:100%;
@@ -915,11 +919,9 @@ export default function HomePage() {
           right: 20px;
           bottom: 18px;
           z-index: 40;
-
           display: flex;
           align-items: center;
           gap: 10px;
-
           font-size: 13px;
           line-height: 1;
         }
@@ -927,13 +929,10 @@ export default function HomePage() {
           display: flex;
           align-items: center;
           gap: 8px;
-
           text-decoration: none;
           color: rgba(10,10,10,.55);
         }
-        .creatorRow:hover{
-          color: rgba(10,10,10,.85);
-        }
+        .creatorRow:hover{ color: rgba(10,10,10,.85); }
         .creatorAvatar{
           width: 22px;
           height: 22px;
@@ -947,7 +946,6 @@ export default function HomePage() {
         .baseJoin{
           position: relative;
           padding-left: 14px;
-
           text-decoration: none;
           font-size: 13px;
           font-weight: 600;
@@ -959,16 +957,12 @@ export default function HomePage() {
           left: 4px;
           color: rgba(10,10,10,.35);
         }
-        .baseJoin:hover{
-          color: rgba(10,10,10,.8);
-        }
+        .baseJoin:hover{ color: rgba(10,10,10,.8); }
 
         @media (max-width: 560px){
           .stage{ padding:24px 18px 22px; gap:10px; }
           .actions{ padding:16px 18px; }
-
           .bigReel{ height: 200px; }
-
           .bigTile{
             width: 132px;
             height: 132px;
@@ -976,10 +970,8 @@ export default function HomePage() {
             margin-top: -66px;
             border-radius: 30px;
           }
-
           .handleLink{ font-size:26px; }
           .bio{ font-size:14px; }
-
           .creatorBadge{
             right: 14px;
             bottom: 12px;
