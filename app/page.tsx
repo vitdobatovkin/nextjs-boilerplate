@@ -1080,39 +1080,43 @@ export default function HomePage() {
         }
 
 @media (max-width: 768px) {
-  /* ===== общий мобильный лейаут ===== */
+  /* ✅ УБИРАЕМ вертикальное центрирование — главный фикс видимости футера */
   .wrap {
-    padding: 20px 12px 16px;
+    min-height: auto;
+    display: block;
+    padding: 16px 12px 10px;
+  }
+
+  .hero {
+    margin-bottom: 12px;
   }
 
   .stage {
-    padding: 20px 14px 18px;
+    padding: 18px 14px 16px;
     gap: 8px;
   }
 
-  /* ===== ПАНЕЛЬ ===== */
   .panel {
     width: 100%;
-    margin: 14px auto 0; /* чуть меньше сверху */
+    margin: 10px auto 0; /* меньше воздуха над карточкой */
     border-radius: 26px;
   }
 
-  /* ===== КНОПКИ ===== */
   .actions {
-    padding: 14px 14px 6px; /* минимальный низ */
+    padding: 12px 14px 8px;
   }
 
   .bigReel {
-    height: 200px;
+    height: 190px; /* чуть меньше — помогает футеру */
     width: 100%;
   }
 
   .bigTile {
-    width: 132px;
-    height: 132px;
-    margin-left: -66px;
-    margin-top: -66px;
-    border-radius: 30px;
+    width: 128px;
+    height: 128px;
+    margin-left: -64px;
+    margin-top: -64px;
+    border-radius: 28px;
   }
 
   .handleLink {
@@ -1123,7 +1127,7 @@ export default function HomePage() {
     font-size: 14px;
   }
 
-  /* ===== FOOTER ===== */
+  /* футер — компактно + небольшой низ */
   .creatorBadge {
     position: relative;
     left: auto;
@@ -1132,8 +1136,8 @@ export default function HomePage() {
     z-index: auto;
 
     width: 100%;
-    margin: 2px auto 0; /* 🔥 МАКСИМАЛЬНО ПЛОТНО К КАРТОЧКЕ */
-    padding: 0 12px calc(10px + env(safe-area-inset-bottom)); /* ⬅ небольшой отступ снизу */
+    margin: 6px auto 0; /* чуть воздуха от карточки */
+    padding: 0 12px calc(10px + env(safe-area-inset-bottom));
 
     display: flex;
     justify-content: space-between;
@@ -1142,7 +1146,6 @@ export default function HomePage() {
 
     font-size: 12px;
     line-height: 1;
-
     pointer-events: auto;
   }
 
@@ -1167,7 +1170,6 @@ export default function HomePage() {
     display: none;
   }
 }
-
 
 
 
