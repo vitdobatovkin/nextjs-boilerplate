@@ -1106,7 +1106,7 @@ export default function HomePage() {
 @media (max-width: 768px) {
   /* ===== BODY FIX (X / Twitter in-app) ===== */
   body {
-    padding-bottom: 84px; /* 🔥 место под нижнюю панель X */
+    padding-bottom: 128px; /* 🔥 место под нижнюю панель X */
   }
 
   /* ===== WRAP ===== */
