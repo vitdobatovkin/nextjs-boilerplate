@@ -1081,18 +1081,30 @@ export default function HomePage() {
 
 @media (max-width: 768px) {
   /* ===== общий мобильный лейаут ===== */
+  .wrap {
+    padding: 20px 12px 16px; /* симметричные боковые отступы */
+  }
+
   .stage {
-    padding: 20px 16px 18px;
+    padding: 20px 14px 18px;
     gap: 8px;
   }
 
-  /* КНОПКИ — убираем лишний низ */
+  /* ===== ПАНЕЛЬ (фикс перекоса) ===== */
+  .panel {
+    width: 100%;              /* ❗ вместо 96vw */
+    margin: 16px auto 0;
+    border-radius: 26px;
+  }
+
+  /* ===== КНОПКИ ===== */
   .actions {
-    padding: 14px 16px 8px; /* было 16px 18px */
+    padding: 14px 14px 8px;   /* уменьшен низ */
   }
 
   .bigReel {
     height: 200px;
+    width: 100%;
   }
 
   .bigTile {
@@ -1119,9 +1131,9 @@ export default function HomePage() {
     bottom: auto;
     z-index: auto;
 
-    width: min(1240px, 96vw);
-    margin: 6px auto calc(6px + env(safe-area-inset-bottom)); /* КЛЮЧЕВОЕ */
-    padding: 0 16px;
+    width: 100%; /* ❗ убираем vw */
+    margin: 6px auto calc(6px + env(safe-area-inset-bottom));
+    padding: 0 12px;
 
     display: flex;
     justify-content: space-between;
@@ -1153,11 +1165,6 @@ export default function HomePage() {
 
   .baseJoin::before {
     display: none;
-  }
-
-  /* нижний отступ страницы — минимальный */
-  .wrap {
-    padding-bottom: 16px; /* было 44px */
   }
 }
 
