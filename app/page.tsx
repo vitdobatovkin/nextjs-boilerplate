@@ -688,14 +688,21 @@ export default function HomePage() {
           </span>
         </a>
 
-        <a
-          href="https://base.app/profile/muraa"
-          target="_blank"
-          rel="noreferrer"
-          className="baseJoin"
-        >
-          Base App Profile
-        </a>
+        <span className="baseJoin">
+          Base App{" "}
+          <a
+            href="https://base.app/profile/muraa"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              fontWeight: 800,
+              color: "rgba(10, 10, 10, 0.85)",
+              textDecoration: "none",
+            }}
+          >
+            muraa
+          </a>
+        </span>
       </div>
 
       <style jsx global>{`
