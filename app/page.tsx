@@ -669,36 +669,34 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
-        <div className="creatorBadge">
-          <a
-            href="https://x.com/0x_mura"
-            target="_blank"
-            rel="noreferrer"
-            className="creatorRow"
-          >
-            <img
-              src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
-              alt="0x_mura"
-              className="creatorAvatar"
-            />
-            <span>
-              Created by <b>0x_mura</b>
-            </span>
-          </a>
-
-          <a
-            href="https://base.app/invite/muraa/HCR6DPRH"
-            target="_blank"
-            rel="noreferrer"
-            className="baseJoin"
-          >
-            Join Base App
-          </a>
-        </div>
       </div>
 
-      
+      <div className="creatorBadge">
+        <a
+          href="https://x.com/0x_mura"
+          target="_blank"
+          rel="noreferrer"
+          className="creatorRow"
+        >
+          <img
+            src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
+            alt="0x_mura"
+            className="creatorAvatar"
+          />
+          <span>
+            Created by <b>0x_mura</b>
+          </span>
+        </a>
+
+        <a
+          href="https://base.app/invite/muraa/HCR6DPRH"
+          target="_blank"
+          rel="noreferrer"
+          className="baseJoin"
+        >
+          Join Base App
+        </a>
+      </div>
 
       <style jsx global>{`
         :root {
@@ -1082,32 +1080,26 @@ export default function HomePage() {
         }
 
 @media (max-width: 768px) {
-  /* wrap становится колонкой и держит футер внизу */
+  /* ===== общий мобильный лейаут ===== */
   .wrap {
-    min-height: 100svh; /* лучше для мобилок чем 100% */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding: 18px 12px calc(12px + env(safe-area-inset-bottom));
-  }
-
-  .hero {
-    margin-bottom: 14px;
-  }
-
-  .panel {
-    width: 100%;
-    margin: 0 auto;
-    border-radius: 26px;
+    padding: 20px 12px 16px;
   }
 
   .stage {
-    padding: 18px 14px 14px;
-    gap: 10px;
+    padding: 20px 14px 18px;
+    gap: 8px;
   }
 
+  /* ===== ПАНЕЛЬ ===== */
+  .panel {
+    width: 100%;
+    margin: 14px auto 0; /* чуть меньше сверху */
+    border-radius: 26px;
+  }
+
+  /* ===== КНОПКИ ===== */
   .actions {
-    padding: 12px 14px 10px;
+    padding: 14px 14px 6px; /* минимальный низ */
   }
 
   .bigReel {
@@ -1131,11 +1123,17 @@ export default function HomePage() {
     font-size: 14px;
   }
 
-  /* футер уезжает вниз если есть место */
+  /* ===== FOOTER ===== */
   .creatorBadge {
-    margin-top: auto; /* 🔥 ключ: прижать вниз как на скрине */
-    padding: 10px 12px 0; /* небольшой отступ от панели */
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    z-index: auto;
+
     width: 100%;
+    margin: 2px auto 0; /* 🔥 МАКСИМАЛЬНО ПЛОТНО К КАРТОЧКЕ */
+    padding: 0 12px calc(10px + env(safe-area-inset-bottom)); /* ⬅ небольшой отступ снизу */
 
     display: flex;
     justify-content: space-between;
@@ -1144,6 +1142,8 @@ export default function HomePage() {
 
     font-size: 12px;
     line-height: 1;
+
+    pointer-events: auto;
   }
 
   .creatorRow,
