@@ -540,7 +540,7 @@ export default function HomePage() {
           <div className="tag">2026 EDITION</div>
           <h1>How based are you in 2026?</h1>
           <p className="sub">
-            Tap <b>Base me</b> — quick spin, and we’ll rate how based you are.
+            Tap <b>Base me</b> — quick spin and we'll rate how based you are
           </p>
         </div>
 
