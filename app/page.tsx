@@ -1080,43 +1080,39 @@ export default function HomePage() {
         }
 
 @media (max-width: 768px) {
-  /* ✅ УБИРАЕМ вертикальное центрирование — главный фикс видимости футера */
+  /* ===== общий мобильный лейаут ===== */
   .wrap {
-    min-height: auto;
-    display: block;
-    padding: 16px 12px 10px;
-  }
-
-  .hero {
-    margin-bottom: 12px;
+    padding: 20px 12px 16px;
   }
 
   .stage {
-    padding: 18px 14px 16px;
+    padding: 20px 14px 18px;
     gap: 8px;
   }
 
+  /* ===== ПАНЕЛЬ ===== */
   .panel {
     width: 100%;
-    margin: 10px auto 0; /* меньше воздуха над карточкой */
+    margin: 6px auto 0; /* ❗ БЫЛО 14px — уменьшили зазор как на скрине */
     border-radius: 26px;
   }
 
+  /* ===== КНОПКИ ===== */
   .actions {
-    padding: 12px 14px 8px;
+    padding: 14px 14px 6px;
   }
 
   .bigReel {
-    height: 190px; /* чуть меньше — помогает футеру */
+    height: 200px;
     width: 100%;
   }
 
   .bigTile {
-    width: 128px;
-    height: 128px;
-    margin-left: -64px;
-    margin-top: -64px;
-    border-radius: 28px;
+    width: 132px;
+    height: 132px;
+    margin-left: -66px;
+    margin-top: -66px;
+    border-radius: 30px;
   }
 
   .handleLink {
@@ -1127,7 +1123,7 @@ export default function HomePage() {
     font-size: 14px;
   }
 
-  /* футер — компактно + небольшой низ */
+  /* ===== FOOTER ===== */
   .creatorBadge {
     position: relative;
     left: auto;
@@ -1136,7 +1132,7 @@ export default function HomePage() {
     z-index: auto;
 
     width: 100%;
-    margin: 6px auto 0; /* чуть воздуха от карточки */
+    margin: 2px auto 0;
     padding: 0 12px calc(10px + env(safe-area-inset-bottom));
 
     display: flex;
