@@ -1082,7 +1082,7 @@ export default function HomePage() {
 @media (max-width: 768px) {
   /* ===== общий мобильный лейаут ===== */
   .wrap {
-    padding: 20px 12px 16px;
+    padding: 8px 12px 16px; /* ❗ БЫЛО 20px сверху */
   }
 
   .stage {
@@ -1093,7 +1093,7 @@ export default function HomePage() {
   /* ===== ПАНЕЛЬ ===== */
   .panel {
     width: 100%;
-    margin: 6px auto 0; /* ❗ БЫЛО 14px — уменьшили зазор как на скрине */
+    margin: 6px auto 0;
     border-radius: 26px;
   }
 
