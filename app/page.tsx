@@ -127,8 +127,6 @@ function useFullscreenConfetti() {
   const untilRef = useRef<number>(0);
   const partsRef = useRef<ConfettiParticle[]>([]);
 
-  
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -270,20 +268,6 @@ export default function HomePage() {
       winAudioRef.current = null;
     };
   }, []);
-
-    // ✅ extra bottom padding for X(Twitter) in-app browser
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const ua = navigator.userAgent || "";
-    const isXInApp = /\bTwitter\b/i.test(ua) || /\bXClient\b/i.test(ua);
-
-    document.documentElement.style.setProperty(
-      "--x-inapp-bottom",
-      isXInApp ? "72px" : "0px"
-    );
-  }, []);
-
 
   function unlockAudioOnce() {
     // ✅ на мобиле никогда не анлочим
@@ -1102,11 +1086,10 @@ export default function HomePage() {
         .baseJoin:hover {
           color: rgba(10, 10, 10, 0.8);
         }
-
 @media (max-width: 768px) {
   /* ===== общий мобильный лейаут ===== */
   .wrap {
-    padding: 8px 12px 140px; /* ✅ большой низ под X in-app панель */
+    padding: 8px 12px 16px; /* ❗ БЫЛО 20px сверху */
   }
 
   .stage {
@@ -1147,55 +1130,49 @@ export default function HomePage() {
     font-size: 14px;
   }
 
-  /* ===== FOOTER (stable) ===== */
+  /* ===== FOOTER (STICKY) ===== */
   .creatorBadge {
-    position: relative; /* ✅ НЕ sticky — чтобы не "плыло" в X */
-    bottom: auto;
-    z-index: auto;
+    position: sticky; /* ✅ было relative */
+    bottom: env(safe-area-inset-bottom); /* ✅ */
+    z-index: 40; /* ✅ чтобы не пряталось */
 
     width: 100%;
-    margin: 10px auto 0;
-    padding: 0 12px calc(18px + env(safe-area-inset-bottom));
+    margin: 2px auto 0;
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); /* ✅ чуть паддинг сверху, чтобы выглядело как бар */
 
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 
     font-size: 12px;
     line-height: 1;
-
     pointer-events: auto;
+
     background: transparent;
   }
 
-  .creatorRow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    color: rgba(10, 10, 10, 0.55);
+  .creatorRow,
+  .baseJoin {
     white-space: nowrap;
     flex: 0 0 auto;
-  }
-
-  .creatorRow:hover {
-    color: rgba(10, 10, 10, 0.85);
   }
 
   .creatorAvatar {
     width: 18px;
     height: 18px;
-    border-radius: 999px;
-    object-fit: cover;
   }
 
-  .creatorRow b {
-    font-weight: 800;
-    color: rgba(10, 10, 10, 0.75);
+  .baseJoin {
+    padding-left: 0;
+    font-weight: 600;
+    color: rgba(10, 10, 10, 0.45);
+  }
+
+  .baseJoin::before {
+    display: none;
   }
 }
-
 
 
 
