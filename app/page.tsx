@@ -1082,9 +1082,7 @@ export default function HomePage() {
 @media (max-width: 768px) {
   /* ===== общий мобильный лейаут ===== */
   .wrap {
-    padding: 20px 12px calc(22px + env(safe-area-inset-bottom));
-    /*                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       ✅ воздух снизу под футером (0x_mura / Join Base App) */
+    padding: 20px 12px 16px; /* wrap уже не отвечает за отступ под футером */
   }
 
   .stage {
@@ -1094,14 +1092,14 @@ export default function HomePage() {
 
   /* ===== ПАНЕЛЬ (фикс перекоса) ===== */
   .panel {
-    width: 100%; /* ❗ вместо 96vw, чтобы не было сдвига */
+    width: 100%;
     margin: 16px auto 0;
     border-radius: 26px;
   }
 
-  /* ===== КНОПКИ (меньше воздуха снизу) ===== */
+  /* ===== КНОПКИ ===== */
   .actions {
-    padding: 14px 14px 8px; /* top / lr / bottom */
+    padding: 14px 14px 8px;
   }
 
   .bigReel {
@@ -1133,9 +1131,9 @@ export default function HomePage() {
     bottom: auto;
     z-index: auto;
 
-    width: 100%; /* ❗ убираем vw */
-    margin: 6px auto 0; /* низ даём через .wrap padding-bottom */
-    padding: 0 12px;
+    width: 100%;
+    margin: 6px auto 0;
+    padding: 0 12px calc(14px + env(safe-area-inset-bottom)); /* ✅ ОТСТУП СНИЗУ */
 
     display: flex;
     justify-content: space-between;
