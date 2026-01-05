@@ -1104,28 +1104,35 @@ export default function HomePage() {
         }
 
 @media (max-width: 768px) {
-  /* ===== общий мобильный лейаут ===== */
-  .wrap {
-    padding: 8px 12px 16px; /* ❗ БЫЛО 20px сверху */
+  /* ===== BODY FIX (X / Twitter in-app) ===== */
+  body {
+    padding-bottom: 84px; /* 🔥 место под нижнюю панель X */
   }
 
+  /* ===== WRAP ===== */
+  .wrap {
+    padding: 8px 12px 16px;
+  }
+
+  /* ===== STAGE ===== */
   .stage {
     padding: 20px 14px 18px;
     gap: 8px;
   }
 
-  /* ===== ПАНЕЛЬ ===== */
+  /* ===== PANEL ===== */
   .panel {
     width: 100%;
     margin: 6px auto 0;
     border-radius: 26px;
   }
 
-  /* ===== КНОПКИ ===== */
+  /* ===== ACTIONS ===== */
   .actions {
     padding: 14px 14px 6px;
   }
 
+  /* ===== REEL ===== */
   .bigReel {
     height: 200px;
     width: 100%;
@@ -1139,6 +1146,7 @@ export default function HomePage() {
     border-radius: 30px;
   }
 
+  /* ===== META ===== */
   .handleLink {
     font-size: 26px;
   }
@@ -1147,50 +1155,53 @@ export default function HomePage() {
     font-size: 14px;
   }
 
-  /* ===== FOOTER (STICKY) ===== */
+  /* ===== FOOTER (STICKY BAR) ===== */
   .creatorBadge {
     position: sticky;
-    bottom: calc(env(safe-area-inset-bottom) + var(--x-inapp-bottom, 0px));
+    bottom: 0;
     z-index: 40;
 
     width: 100%;
-    margin: 2px auto 0;
-    padding: 8px 12px
-      calc(10px + env(safe-area-inset-bottom) + var(--x-inapp-bottom, 0px));
+    margin: 0;
+    padding: 8px 12px 12px;
 
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 
     font-size: 12px;
     line-height: 1;
-    pointer-events: auto;
 
-    background: transparent;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(6px);
   }
 
-  .creatorRow,
-  .baseJoin {
-    white-space: nowrap;
-    flex: 0 0 auto;
+  .creatorRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: rgba(10, 10, 10, 0.55);
+  }
+
+  .creatorRow:hover {
+    color: rgba(10, 10, 10, 0.85);
   }
 
   .creatorAvatar {
     width: 18px;
     height: 18px;
+    border-radius: 999px;
+    object-fit: cover;
   }
 
-  .baseJoin {
-    padding-left: 0;
-    font-weight: 600;
-    color: rgba(10, 10, 10, 0.45);
-  }
-
-  .baseJoin::before {
-    display: none;
+  .creatorRow b {
+    font-weight: 800;
+    color: rgba(10, 10, 10, 0.75);
   }
 }
+
 
 
 
