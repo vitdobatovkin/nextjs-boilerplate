@@ -689,12 +689,12 @@ export default function HomePage() {
         </a>
 
         <a
-          href="https://base.app/invite/muraa/HCR6DPRH"
+          href="https://base.app/profile/muraa"
           target="_blank"
           rel="noreferrer"
           className="baseJoin"
         >
-          Join Base App
+          Base App Profile
         </a>
       </div>
 
