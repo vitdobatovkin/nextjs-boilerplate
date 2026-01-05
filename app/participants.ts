@@ -7,7 +7,6 @@ export const RAW_PARTICIPANTS: Person[] = [
   { handle:"@maxbranzburg", image:"https://pbs.twimg.com/profile_images/1640358235931541506/UbOccG9U_400x400.jpg", bio:"Consumer & business products Coinbase" },
   { handle:"@ShanAggarwal", image:"https://pbs.twimg.com/profile_images/1897730647378014208/nA2ih7KS_400x400.jpg", bio:"Chief business officer Coinbase" },
   { handle:"@faryarshirzad", image:"https://pbs.twimg.com/profile_images/1930336640544722944/PLA2b1k1_400x400.jpg", bio:"Chief Policy Officer Coinbase" },
-
   { handle:"@antoniogm", image:"https://pbs.twimg.com/profile_images/1789393888278683648/0vAi6k80_400x400.jpg", bio:"Director Base Ads" },
   { handle:"@drewcoffman", image:"https://pbs.twimg.com/profile_images/1877964530904715264/sbitBnjc_400x400.jpg", bio:"Thinking deeply about social and storytelling at Base" },
   { handle:"@jessepollak", image:"https://pbs.twimg.com/profile_images/1879556312822120448/QngrqCSC_400x400.jpg", bio:"Base builder #001" },
