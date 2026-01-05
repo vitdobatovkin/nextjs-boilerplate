@@ -688,21 +688,35 @@ export default function HomePage() {
           </span>
         </a>
 
-        <span className="baseJoin">
-          Base App{" "}
-          <a
-            href="https://base.app/profile/muraa"
-            target="_blank"
-            rel="noreferrer"
+        <span className="baseJoin" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <img
+            src="https://pbs.twimg.com/profile_images/2001441385246003200/7rYBAM7d_400x400.jpg"
+            alt="Base App"
             style={{
-              fontWeight: 800,
-              color: "rgba(10, 10, 10, 0.85)",
-              textDecoration: "none",
+              width: 16,
+              height: 16,
+              borderRadius: 4,
+              objectFit: "cover",
             }}
-          >
-            muraa
-          </a>
+          />
+        
+          <span style={{ color: "rgba(10, 10, 10, 0.45)" }}>
+            Base App{" "}
+            <a
+              href="https://base.app/profile/muraa"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                fontWeight: 800,
+                color: "rgba(10, 10, 10, 0.85)",
+                textDecoration: "none",
+              }}
+            >
+              muraa
+            </a>
+          </span>
         </span>
+
       </div>
 
       <style jsx global>{`
