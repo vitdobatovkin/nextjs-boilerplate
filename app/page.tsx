@@ -1080,35 +1080,37 @@ export default function HomePage() {
         }
 
 @media (max-width: 768px) {
-  /* ===== КЛЮЧЕВОЕ: убираем вертикальное центрирование на мобиле ===== */
+  /* ===== PAGE WRAPPER ===== */
   .wrap {
-    min-height: auto;                  /* было min-height:100% */
-    display: block;                    /* было grid */
-    padding: 18px 12px 12px;           /* компактнее */
+    min-height: auto;
+    display: block;
+    padding: 20px 12px 16px;
   }
 
+  /* ===== HERO ===== */
   .hero {
-    margin-bottom: 12px;
+    margin-bottom: 20px; /* ⬅ отступ до карточки */
   }
 
-  /* ===== общий мобильный лейаут ===== */
-  .stage {
-    padding: 18px 14px 16px;
-    gap: 8px;
-  }
-
-  /* ===== ПАНЕЛЬ (фикс перекоса + компактнее) ===== */
+  /* ===== PANEL ===== */
   .panel {
-    width: 100%;                       /* вместо 96vw */
-    margin: 12px auto 0;               /* меньше сверху */
+    width: 100%;
+    margin: 0 auto 16px; /* ⬅ отступ до футера */
     border-radius: 26px;
   }
 
-  /* ===== КНОПКИ ===== */
-  .actions {
-    padding: 12px 14px 6px;            /* меньше воздуха снизу */
+  /* ===== STAGE ===== */
+  .stage {
+    padding: 18px 14px 16px;
+    gap: 10px;
   }
 
+  /* ===== ACTIONS ===== */
+  .actions {
+    padding: 14px 14px 10px;
+  }
+
+  /* ===== REEL ===== */
   .bigReel {
     height: 200px;
     width: 100%;
@@ -1130,17 +1132,13 @@ export default function HomePage() {
     font-size: 14px;
   }
 
-  /* ===== FOOTER (не overlay) ===== */
+  /* ===== FOOTER ===== */
   .creatorBadge {
     position: relative;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    z-index: auto;
-
     width: 100%;
-    margin: 2px auto 0; /* максимально близко к карточке */
-    padding: 0 12px calc(10px + env(safe-area-inset-bottom)); /* небольшой низ */
+
+    margin-top: 8px; /* ⬅ отделяем от карточки */
+    padding: 0 12px calc(16px + env(safe-area-inset-bottom));
 
     display: flex;
     justify-content: space-between;
@@ -1149,8 +1147,6 @@ export default function HomePage() {
 
     font-size: 12px;
     line-height: 1;
-
-    pointer-events: auto;
   }
 
   .creatorRow,
@@ -1174,7 +1170,6 @@ export default function HomePage() {
     display: none;
   }
 }
-
 
 
 
