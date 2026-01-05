@@ -672,52 +672,39 @@ export default function HomePage() {
       </div>
 
       <div className="creatorBadge">
-        <a
-          href="https://x.com/0x_mura"
-          target="_blank"
-          rel="noreferrer"
-          className="creatorRow"
-        >
-          <img
-            src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
-            alt="0x_mura"
-            className="creatorAvatar"
-          />
-          <span>
-            Created by <b>0x_mura</b>
-          </span>
-        </a>
+  <a
+    href="https://x.com/0x_mura"
+    target="_blank"
+    rel="noreferrer"
+    className="creatorRow"
+  >
+    <img
+      src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
+      alt="0x_mura"
+      className="creatorAvatar"
+    />
+    <span>
+      Created by <b>0x_mura</b>
+    </span>
+  </a>
 
-        <span className="baseJoin" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <img
-            src="https://pbs.twimg.com/profile_images/2001441385246003200/7rYBAM7d_400x400.jpg"
-            alt="Base App"
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: 4,
-              objectFit: "cover",
-            }}
-          />
-        
-          <span style={{ color: "rgba(10, 10, 10, 0.45)" }}>
-            Base App{" "}
-            <a
-              href="https://base.app/profile/muraa"
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                fontWeight: 800,
-                color: "rgba(10, 10, 10, 0.85)",
-                textDecoration: "none",
-              }}
-            >
-              muraa
-            </a>
-          </span>
-        </span>
+  <a
+    href="https://base.app/profile/muraa"
+    target="_blank"
+    rel="noreferrer"
+    className="creatorRow"
+  >
+    <img
+      src="https://pbs.twimg.com/profile_images/2001441385246003200/7rYBAM7d_400x400.jpg"
+      alt="Base App"
+      className="creatorAvatar"
+    />
+    <span>
+      Base App <b>muraa</b>
+    </span>
+  </a>
+</div>
 
-      </div>
 
       <style jsx global>{`
         :root {
