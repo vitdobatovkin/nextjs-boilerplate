@@ -1078,11 +1078,10 @@ export default function HomePage() {
         .baseJoin:hover {
           color: rgba(10, 10, 10, 0.8);
         }
-
 @media (max-width: 768px) {
   /* ===== общий мобильный лейаут ===== */
   .wrap {
-    padding: 4px 12px 16px; /* ❗ БЫЛО 20px сверху */
+    padding: 8px 12px 16px; /* ❗ БЫЛО 20px сверху */
   }
 
   .stage {
@@ -1123,13 +1122,26 @@ export default function HomePage() {
     font-size: 14px;
   }
 
-  /* ===== FOOTER ===== */
+  /* ===== FOOTER (STICKY) ===== */
   .creatorBadge {
-    position: sticky;
-    bottom: env(safe-area-inset-bottom); /* iOS safe */
-    background: var(--bg);
-    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
-    z-index: 20;
+    position: sticky; /* ✅ было relative */
+    bottom: env(safe-area-inset-bottom); /* ✅ */
+    z-index: 40; /* ✅ чтобы не пряталось */
+
+    width: 100%;
+    margin: 2px auto 0;
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); /* ✅ чуть паддинг сверху, чтобы выглядело как бар */
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+
+    font-size: 12px;
+    line-height: 1;
+    pointer-events: auto;
+
+    background: var(--bg); /* ✅ чтобы читалось и не просвечивало */
   }
 
   .creatorRow,
