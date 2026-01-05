@@ -669,34 +669,36 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        <div className="creatorBadge">
+          <a
+            href="https://x.com/0x_mura"
+            target="_blank"
+            rel="noreferrer"
+            className="creatorRow"
+          >
+            <img
+              src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
+              alt="0x_mura"
+              className="creatorAvatar"
+            />
+            <span>
+              Created by <b>0x_mura</b>
+            </span>
+          </a>
+
+          <a
+            href="https://base.app/invite/muraa/HCR6DPRH"
+            target="_blank"
+            rel="noreferrer"
+            className="baseJoin"
+          >
+            Join Base App
+          </a>
+        </div>
       </div>
 
-      <div className="creatorBadge">
-        <a
-          href="https://x.com/0x_mura"
-          target="_blank"
-          rel="noreferrer"
-          className="creatorRow"
-        >
-          <img
-            src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
-            alt="0x_mura"
-            className="creatorAvatar"
-          />
-          <span>
-            Created by <b>0x_mura</b>
-          </span>
-        </a>
-
-        <a
-          href="https://base.app/invite/muraa/HCR6DPRH"
-          target="_blank"
-          rel="noreferrer"
-          className="baseJoin"
-        >
-          Join Base App
-        </a>
-      </div>
+      
 
       <style jsx global>{`
         :root {
@@ -1080,37 +1082,34 @@ export default function HomePage() {
         }
 
 @media (max-width: 768px) {
-  /* ===== PAGE WRAPPER ===== */
+  /* wrap становится колонкой и держит футер внизу */
   .wrap {
-    min-height: auto;
-    display: block;
-    padding: 20px 12px 16px;
+    min-height: 100svh; /* лучше для мобилок чем 100% */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 18px 12px calc(12px + env(safe-area-inset-bottom));
   }
 
-  /* ===== HERO ===== */
   .hero {
-    margin-bottom: 20px; /* ⬅ отступ до карточки */
+    margin-bottom: 14px;
   }
 
-  /* ===== PANEL ===== */
   .panel {
     width: 100%;
-    margin: 0 auto 16px; /* ⬅ отступ до футера */
+    margin: 0 auto;
     border-radius: 26px;
   }
 
-  /* ===== STAGE ===== */
   .stage {
-    padding: 18px 14px 16px;
+    padding: 18px 14px 14px;
     gap: 10px;
   }
 
-  /* ===== ACTIONS ===== */
   .actions {
-    padding: 14px 14px 10px;
+    padding: 12px 14px 10px;
   }
 
-  /* ===== REEL ===== */
   .bigReel {
     height: 200px;
     width: 100%;
@@ -1132,13 +1131,11 @@ export default function HomePage() {
     font-size: 14px;
   }
 
-  /* ===== FOOTER ===== */
+  /* футер уезжает вниз если есть место */
   .creatorBadge {
-    position: relative;
+    margin-top: auto; /* 🔥 ключ: прижать вниз как на скрине */
+    padding: 10px 12px 0; /* небольшой отступ от панели */
     width: 100%;
-
-    margin-top: 8px; /* ⬅ отделяем от карточки */
-    padding: 0 12px calc(16px + env(safe-area-inset-bottom));
 
     display: flex;
     justify-content: space-between;
@@ -1170,6 +1167,7 @@ export default function HomePage() {
     display: none;
   }
 }
+
 
 
 
