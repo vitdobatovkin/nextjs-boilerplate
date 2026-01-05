@@ -127,6 +127,8 @@ function useFullscreenConfetti() {
   const untilRef = useRef<number>(0);
   const partsRef = useRef<ConfettiParticle[]>([]);
 
+  
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -268,6 +270,20 @@ export default function HomePage() {
       winAudioRef.current = null;
     };
   }, []);
+
+    // ✅ extra bottom padding for X(Twitter) in-app browser
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const ua = navigator.userAgent || "";
+    const isXInApp = /\bTwitter\b/i.test(ua) || /\bXClient\b/i.test(ua);
+
+    document.documentElement.style.setProperty(
+      "--x-inapp-bottom",
+      isXInApp ? "72px" : "0px"
+    );
+  }, []);
+
 
   function unlockAudioOnce() {
     // ✅ на мобиле никогда не анлочим
@@ -1086,6 +1102,7 @@ export default function HomePage() {
         .baseJoin:hover {
           color: rgba(10, 10, 10, 0.8);
         }
+
 @media (max-width: 768px) {
   /* ===== общий мобильный лейаут ===== */
   .wrap {
@@ -1132,13 +1149,14 @@ export default function HomePage() {
 
   /* ===== FOOTER (STICKY) ===== */
   .creatorBadge {
-    position: sticky; /* ✅ было relative */
-    bottom: env(safe-area-inset-bottom); /* ✅ */
-    z-index: 40; /* ✅ чтобы не пряталось */
+    position: sticky;
+    bottom: calc(env(safe-area-inset-bottom) + var(--x-inapp-bottom, 0px));
+    z-index: 40;
 
     width: 100%;
     margin: 2px auto 0;
-    padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); /* ✅ чуть паддинг сверху, чтобы выглядело как бар */
+    padding: 8px 12px
+      calc(10px + env(safe-area-inset-bottom) + var(--x-inapp-bottom, 0px));
 
     display: flex;
     justify-content: space-between;
