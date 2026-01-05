@@ -1082,7 +1082,7 @@ export default function HomePage() {
 @media (max-width: 768px) {
   /* ===== общий мобильный лейаут ===== */
   .wrap {
-    padding: 20px 12px 16px; /* wrap уже не отвечает за отступ под футером */
+    padding: 20px 12px 16px;
   }
 
   .stage {
@@ -1090,16 +1090,16 @@ export default function HomePage() {
     gap: 8px;
   }
 
-  /* ===== ПАНЕЛЬ (фикс перекоса) ===== */
+  /* ===== ПАНЕЛЬ ===== */
   .panel {
     width: 100%;
-    margin: 16px auto 0;
+    margin: 14px auto 0; /* чуть меньше сверху */
     border-radius: 26px;
   }
 
   /* ===== КНОПКИ ===== */
   .actions {
-    padding: 14px 14px 8px;
+    padding: 14px 14px 6px; /* минимальный низ */
   }
 
   .bigReel {
@@ -1123,7 +1123,7 @@ export default function HomePage() {
     font-size: 14px;
   }
 
-  /* ===== FOOTER вместо overlay ===== */
+  /* ===== FOOTER ===== */
   .creatorBadge {
     position: relative;
     left: auto;
@@ -1132,8 +1132,8 @@ export default function HomePage() {
     z-index: auto;
 
     width: 100%;
-    margin: 6px auto 0;
-    padding: 0 12px calc(14px + env(safe-area-inset-bottom)); /* ✅ ОТСТУП СНИЗУ */
+    margin: 2px auto 0; /* 🔥 МАКСИМАЛЬНО ПЛОТНО К КАРТОЧКЕ */
+    padding: 0 12px calc(10px + env(safe-area-inset-bottom)); /* ⬅ небольшой отступ снизу */
 
     display: flex;
     justify-content: space-between;
