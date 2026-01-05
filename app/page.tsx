@@ -1141,7 +1141,7 @@ export default function HomePage() {
     line-height: 1;
     pointer-events: auto;
 
-    background: var(--bg); /* ✅ чтобы читалось и не просвечивало */
+    background: transparent;
   }
 
   .creatorRow,
