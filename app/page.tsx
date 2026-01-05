@@ -1082,12 +1082,13 @@ export default function HomePage() {
 @media (max-width: 768px) {
   /* ===== общий мобильный лейаут ===== */
   .stage {
-    padding: 24px 18px 22px;
-    gap: 10px;
+    padding: 20px 16px 18px;
+    gap: 8px;
   }
 
+  /* КНОПКИ — убираем лишний низ */
   .actions {
-    padding: 16px 18px;
+    padding: 14px 16px 8px; /* было 16px 18px */
   }
 
   .bigReel {
@@ -1112,25 +1113,25 @@ export default function HomePage() {
 
   /* ===== FOOTER вместо overlay ===== */
   .creatorBadge {
-    position: relative; /* КЛЮЧЕВОЕ */
+    position: relative;
     left: auto;
     right: auto;
     bottom: auto;
     z-index: auto;
 
     width: min(1240px, 96vw);
-    margin: 18px auto calc(12px + env(safe-area-inset-bottom));
-    padding: 0 18px;
+    margin: 6px auto calc(6px + env(safe-area-inset-bottom)); /* КЛЮЧЕВОЕ */
+    padding: 0 16px;
 
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
 
     font-size: 12px;
     line-height: 1;
 
-    pointer-events: auto; /* больше не overlay */
+    pointer-events: auto;
   }
 
   .creatorRow,
@@ -1154,11 +1155,12 @@ export default function HomePage() {
     display: none;
   }
 
-  /* футер больше не налезает — хак не нужен */
+  /* нижний отступ страницы — минимальный */
   .wrap {
-    padding-bottom: 44px;
+    padding-bottom: 16px; /* было 44px */
   }
 }
+
 
 
       `}</style>
