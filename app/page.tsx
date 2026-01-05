@@ -1132,7 +1132,7 @@ export default function HomePage() {
     z-index: auto;
 
     width: 100%; /* ❗ убираем vw */
-    margin: 6px auto calc(6px + env(safe-area-inset-bottom));
+    margin: 6px auto calc(12px + env(safe-area-inset-bottom));
     padding: 0 12px;
 
     display: flex;
