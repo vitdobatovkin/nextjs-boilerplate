@@ -1125,24 +1125,11 @@ export default function HomePage() {
 
   /* ===== FOOTER ===== */
   .creatorBadge {
-    position: relative;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    z-index: auto;
-
-    width: 100%;
-    margin: 2px auto 0;
-    padding: 0 12px calc(10px + env(safe-area-inset-bottom));
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 6px;
-
-    font-size: 12px;
-    line-height: 1;
-    pointer-events: auto;
+    position: sticky;
+    bottom: env(safe-area-inset-bottom); /* iOS safe */
+    background: var(--bg);
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    z-index: 20;
   }
 
   .creatorRow,
