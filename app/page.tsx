@@ -1104,35 +1104,28 @@ export default function HomePage() {
         }
 
 @media (max-width: 768px) {
-  /* ===== BODY FIX (X / Twitter in-app) ===== */
-  body {
-    padding-bottom: 128px; /* 🔥 место под нижнюю панель X */
-  }
-
-  /* ===== WRAP ===== */
+  /* ===== общий мобильный лейаут ===== */
   .wrap {
-    padding: 8px 12px 16px;
+    padding: 8px 12px 140px; /* ✅ большой низ под X in-app панель */
   }
 
-  /* ===== STAGE ===== */
   .stage {
     padding: 20px 14px 18px;
     gap: 8px;
   }
 
-  /* ===== PANEL ===== */
+  /* ===== ПАНЕЛЬ ===== */
   .panel {
     width: 100%;
     margin: 6px auto 0;
     border-radius: 26px;
   }
 
-  /* ===== ACTIONS ===== */
+  /* ===== КНОПКИ ===== */
   .actions {
     padding: 14px 14px 6px;
   }
 
-  /* ===== REEL ===== */
   .bigReel {
     height: 200px;
     width: 100%;
@@ -1146,7 +1139,6 @@ export default function HomePage() {
     border-radius: 30px;
   }
 
-  /* ===== META ===== */
   .handleLink {
     font-size: 26px;
   }
@@ -1155,15 +1147,15 @@ export default function HomePage() {
     font-size: 14px;
   }
 
-  /* ===== FOOTER (STICKY BAR) ===== */
+  /* ===== FOOTER (stable) ===== */
   .creatorBadge {
-    position: sticky;
-    bottom: 0;
-    z-index: 40;
+    position: relative; /* ✅ НЕ sticky — чтобы не "плыло" в X */
+    bottom: auto;
+    z-index: auto;
 
     width: 100%;
-    margin: 0;
-    padding: 8px 12px 12px;
+    margin: 10px auto 0;
+    padding: 0 12px calc(18px + env(safe-area-inset-bottom));
 
     display: flex;
     justify-content: space-between;
@@ -1173,8 +1165,8 @@ export default function HomePage() {
     font-size: 12px;
     line-height: 1;
 
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(6px);
+    pointer-events: auto;
+    background: transparent;
   }
 
   .creatorRow {
@@ -1183,6 +1175,8 @@ export default function HomePage() {
     gap: 8px;
     text-decoration: none;
     color: rgba(10, 10, 10, 0.55);
+    white-space: nowrap;
+    flex: 0 0 auto;
   }
 
   .creatorRow:hover {
