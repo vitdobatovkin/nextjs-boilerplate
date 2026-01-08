@@ -452,7 +452,6 @@ export default function HomePage() {
   }
 
   async function spin() {
-    // ✅ на мобиле ничего не делаем со звуком
     unlockAudioOnce();
 
     if (!people.length) return;
@@ -570,8 +569,7 @@ export default function HomePage() {
                   const dist = Math.abs(x) / STEP;
 
                   const isCenter = i === HALF;
-                  const allowClick =
-                    mode === "locked" && isCenter && !!shownPerson;
+                  const allowClick = mode === "locked" && isCenter && !!shownPerson;
 
                   const popScale = allowClick ? 1.12 : 1;
                   const popY = allowClick ? -16 : 0;
@@ -626,12 +624,7 @@ export default function HomePage() {
 
             {mode === "locked" && shownPerson && (
               <div className="meta">
-                <a
-                  className="handleLink"
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+                <a className="handleLink" href={url} target="_blank" rel="noreferrer">
                   {shownPerson.handle}
                 </a>
                 <div className="bio">{shownPerson.bio || ""}</div>
@@ -651,11 +644,7 @@ export default function HomePage() {
 
           <div className="actions">
             <div className="btns">
-              <button
-                className="primary"
-                onClick={spin}
-                disabled={!people.length || !ready}
-              >
+              <button className="primary" onClick={spin} disabled={!people.length || !ready}>
                 {!ready ? "Loading…" : spinning ? "Spinning…" : "Base me"}
               </button>
 
@@ -669,42 +658,42 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* ✅ mobile footer should sit right under the card => keep it INSIDE .wrap */}
+        <div className="creatorBadge">
+          <a
+            href="https://x.com/0x_mura"
+            target="_blank"
+            rel="noreferrer"
+            className="creatorRow"
+          >
+            <img
+              src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
+              alt="0x_mura"
+              className="creatorAvatar"
+            />
+            <span>
+              Created by <b>0x_mura</b>
+            </span>
+          </a>
+
+          <a
+            href="https://base.app/profile/muraa"
+            target="_blank"
+            rel="noreferrer"
+            className="creatorRow"
+          >
+            <img
+              src="https://pbs.twimg.com/profile_images/2001441385246003200/7rYBAM7d_400x400.jpg"
+              alt="Base App"
+              className="creatorAvatar"
+            />
+            <span>
+              Base App <b>muraa</b>
+            </span>
+          </a>
+        </div>
       </div>
-
-      <div className="creatorBadge">
-  <a
-    href="https://x.com/0x_mura"
-    target="_blank"
-    rel="noreferrer"
-    className="creatorRow"
-  >
-    <img
-      src="https://pbs.twimg.com/profile_images/2003823220412026880/6UDZykCm_400x400.jpg"
-      alt="0x_mura"
-      className="creatorAvatar"
-    />
-    <span>
-      Created by <b>0x_mura</b>
-    </span>
-  </a>
-
-  <a
-    href="https://base.app/profile/muraa"
-    target="_blank"
-    rel="noreferrer"
-    className="creatorRow"
-  >
-    <img
-      src="https://pbs.twimg.com/profile_images/2001441385246003200/7rYBAM7d_400x400.jpg"
-      alt="Base App"
-      className="creatorAvatar"
-    />
-    <span>
-      Base App <b>muraa</b>
-    </span>
-  </a>
-</div>
-
 
       <style jsx global>{`
         :root {
@@ -857,7 +846,6 @@ export default function HomePage() {
           opacity: 1;
         }
 
-        /* Copy around carousel */
         .carouselHintTop {
           font-size: 13px;
           font-weight: 700;
@@ -875,7 +863,6 @@ export default function HomePage() {
           font-weight: 500;
         }
 
-        /* ===== REEL ===== */
         .bigReel {
           width: min(1180px, 96vw);
           height: 270px;
@@ -1037,7 +1024,7 @@ export default function HomePage() {
           box-shadow: 0 10px 26px rgba(0, 0, 0, 0.06);
         }
 
-        /* creator badge */
+        /* creator badge (desktop stays fixed) */
         .creatorBadge {
           position: fixed;
           right: 20px;
@@ -1069,107 +1056,81 @@ export default function HomePage() {
           font-weight: 800;
           color: rgba(10, 10, 10, 0.75);
         }
-        .baseJoin {
-          position: relative;
-          padding-left: 14px;
-          text-decoration: none;
-          font-size: 13px;
-          font-weight: 600;
-          color: rgba(10, 10, 10, 0.45);
+
+        /* ✅ MOBILE: like limitless (no sticky/fixed footer, sits right under card) */
+        @media (max-width: 768px) {
+          .wrap {
+            padding: 8px 12px 24px; /* ✅ вместо huge padding-bottom */
+          }
+
+          .stage {
+            padding: 20px 14px 18px;
+            gap: 8px;
+          }
+
+          .panel {
+            width: 100%;
+            margin: 6px auto 0;
+            border-radius: 26px;
+          }
+
+          .actions {
+            padding: 14px 14px 6px;
+            padding-bottom: 18px;
+          }
+
+          .bigReel {
+            height: 200px;
+            width: 100%;
+          }
+
+          .bigTile {
+            width: 132px;
+            height: 132px;
+            margin-left: -66px;
+            margin-top: -66px;
+            border-radius: 30px;
+          }
+
+          .handleLink {
+            font-size: 26px;
+          }
+
+          .bio {
+            font-size: 14px;
+          }
+
+          .creatorBadge {
+            position: static; /* ✅ ключевое */
+            width: 100%;
+            margin: 12px auto 0;
+            padding: 0 12px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+
+            font-size: 12px;
+            line-height: 1;
+            background: transparent;
+          }
+
+          .creatorRow {
+            white-space: nowrap;
+            flex: 0 0 auto;
+          }
+
+          .creatorAvatar {
+            width: 18px;
+            height: 18px;
+          }
+
+          /* ✅ если хочешь поменять местами ссылки на мобилке */
+          .creatorBadge {
+            flex-direction: row-reverse;
+          }
         }
-        .baseJoin::before {
-          content: "·";
-          position: absolute;
-          left: 4px;
-          color: rgba(10, 10, 10, 0.35);
-        }
-        .baseJoin:hover {
-          color: rgba(10, 10, 10, 0.8);
-        }
-@media (max-width: 768px) {
-  /* ===== общий мобильный лейаут ===== */
-  .wrap {
-    padding: 8px 12px 16px;
-    /* ✅ большой отступ снизу, чтобы Twitter/X in-app не перекрывал */
-    padding-bottom: calc(140px + env(safe-area-inset-bottom));
-  }
-
-  .stage {
-    padding: 20px 14px 18px;
-    gap: 8px;
-  }
-
-  /* ===== ПАНЕЛЬ ===== */
-  .panel {
-    width: 100%;
-    margin: 6px auto 0;
-    border-radius: 26px;
-  }
-
-  /* ===== КНОПКИ ===== */
-  .actions {
-    padding: 14px 14px 6px;
-    padding-bottom: 18px;
-  }
-
-  .bigReel {
-    height: 200px;
-    width: 100%;
-  }
-
-  .bigTile {
-    width: 132px;
-    height: 132px;
-    margin-left: -66px;
-    margin-top: -66px;
-    border-radius: 30px;
-  }
-
-  .handleLink {
-    font-size: 26px;
-  }
-
-  .bio {
-    font-size: 14px;
-  }
-
-  /* ===== FOOTER (mobile) =====
-     ⚠️ В Twitter in-app sticky/fixed часто перекрывается оверлеями,
-     поэтому делаем footer обычным блоком (static) + запас снизу уже есть в .wrap
-  */
-  .creatorBadge {
-    position: static; /* ✅ вместо sticky/fixed */
-    width: 100%;
-    margin: 10px auto 0;
-    padding: 0 12px;
-    flex-direction: row-reverse;
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-
-    font-size: 12px;
-    line-height: 1;
-    pointer-events: auto;
-
-    background: transparent;
-  }
-
-  .creatorRow {
-    white-space: nowrap;
-    flex: 0 0 auto;
-  }
-
-  .creatorAvatar {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-
-
-
       `}</style>
     </>
   );
