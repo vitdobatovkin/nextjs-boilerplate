@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { RAW_PARTICIPANTS, type Person } from "./participants";
+import { WalletButton } from "./components/wallet-button";
 
 const DEFAULT_BIO = "How based are you in 2026?";
 
@@ -656,6 +657,9 @@ export default function HomePage() {
                 Share on X
               </button>
             </div>
+            <div className="walletSection">
+              <WalletButton />
+            </div>
           </div>
         </section>
 
@@ -984,11 +988,13 @@ export default function HomePage() {
 
         .actions {
           display: flex;
+          flex-direction: column;
           padding: 24px 72px 28px;
           border-top: 1px solid var(--line);
           background: rgba(246, 247, 248, 0.55);
           justify-content: center;
           align-items: center;
+          gap: 16px;
         }
         .btns {
           display: flex;
@@ -997,6 +1003,11 @@ export default function HomePage() {
           width: 100%;
           gap: 12px;
           flex-wrap: wrap;
+        }
+        .walletSection {
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
         button {
           border: 1px solid transparent;
@@ -1077,6 +1088,7 @@ export default function HomePage() {
           .actions {
             padding: 14px 14px 6px;
             padding-bottom: 18px;
+            gap: 12px;
           }
 
           .bigReel {
