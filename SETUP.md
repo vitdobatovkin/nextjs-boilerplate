@@ -46,7 +46,7 @@ NEXT_PUBLIC_ROOT_URL=https://based-me.vercel.app
 3. Нажмите "Submit"
 4. Нажмите "Verify" и следуйте инструкциям
 5. Скопируйте объект `accountAssociation`
-6. Откройте `minikit.config.ts` и вставьте скопированные данные:
+6. Откройте `app/config/minikit.config.ts` и вставьте скопированные данные:
 
 ```typescript
 accountAssociation: {
